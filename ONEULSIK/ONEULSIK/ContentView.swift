@@ -30,10 +30,7 @@ struct ContentView: View {
                 }
                 .padding()
             } else {
-                KakaoLoginView(
-                    isLoading: authStore.isLoading,
-                    errorMessage: authStore.errorMessage
-                ) {
+                KakaoLoginView {
                     Task {
                         await authStore.login()
                     }

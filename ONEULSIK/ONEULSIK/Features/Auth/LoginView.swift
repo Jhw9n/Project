@@ -1,52 +1,57 @@
 import SwiftUI
 
 struct KakaoLoginView: View {
-    let isLoading: Bool
-    let errorMessage: String?
     let onLogin: () -> Void
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        GeometryReader { proxy in
+            ZStack {
+                Color("green03")
+                    .ignoresSafeArea()
 
-            VStack(spacing: 8) {
-                Text("오늘식")
-                    .font(.pretendardExtraBold(32))
+                VStack(spacing: 0) {
+                    brand
 
-                Text("오늘의 식사를 가볍게 기록해 보세요")
-                    .font(.pretendardRegular(16))
-                    .foregroundStyle(Color("gray09"))
-            }
+                    Spacer(minLength: 32)
 
-            Spacer()
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.pretendardRegular(14))
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-            }
-
-            Button(action: onLogin) {
-                HStack(spacing: 8) {
-                    if isLoading {
-                        ProgressView()
-                            .tint(Color("black01"))
-                    }
-
-                    Text("카카오로 시작하기")
-                        .font(.pretendardSemiBold(16))
-                        .foregroundStyle(Color("black01"))
+                    kakaoLoginButton
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(Color("yellow03"))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.top, proxy.size.height * 0.389)
+                .padding(.bottom, proxy.size.height * 0.214)
+
             }
-            .disabled(isLoading)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 32)
-        .background(Color("white01"))
+        .preferredColorScheme(.light)
+    }
+
+    private var brand: some View {
+        VStack(spacing: 24) {
+            Image("oneulsikLogo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 160, height: 50)
+
+            Text("오늘의 식사를 더 건강하게")
+                .font(.pretendardSemiBold(18))
+                .foregroundStyle(.white)
+                .lineSpacing(7)
+        }
+    }
+
+    private var kakaoLoginButton: some View {
+        Button(action: onLogin) {
+            ZStack {
+                Circle()
+                    .fill(Color(red: 254 / 255, green: 229 / 255, blue: 0))
+
+                Image("kakaoTalkIcon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 28, height: 28)
+            }
+            .frame(width: 68, height: 68)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("카카오로 로그인")
     }
 }

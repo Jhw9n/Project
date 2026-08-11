@@ -8,17 +8,40 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
+    @Environment(AuthStore.self) private var authStore
 
-#Preview {
-    ContentView()
+    var body: some View {
+        Group {
+            if let profile = authStore.currentProfile {
+                VStack(spacing: 20) {
+                    Text("\(profile.nickname)님, 반가워요")
+                        .font(.pretendardBold(24))
+
+                    Text("카카오 로그인과 로컬 프로필 저장이 완료되었습니다.")
+                        .font(.pretendardRegular(15))
+                        .foregroundStyle(Color("gray09"))
+
+                    Button("로그아웃") {
+                        Task {
+                            await authStore.logout()
+                        }
+                    }
+                    .font(.pretendardSemiBold(16))
+                }
+                .padding()
+            } else {
+                KakaoLoginView(
+                    isLoading: authStore.isLoading,
+                    errorMessage: authStore.errorMessage
+                ) {
+                    Task {
+                        await authStore.login()
+                    }
+                }
+            }
+        }
+        .task {
+            await authStore.restoreSession()
+        }
+    }
 }

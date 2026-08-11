@@ -6,15 +6,31 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AA1000013024000000000001 /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = AA1000073024000000000007 /* KakaoSDKAuth */; };
+		AA1000023024000000000002 /* KakaoSDKCommon in Frameworks */ = {isa = PBXBuildFile; productRef = AA1000083024000000000008 /* KakaoSDKCommon */; };
+		AA1000033024000000000003 /* KakaoSDKUser in Frameworks */ = {isa = PBXBuildFile; productRef = AA1000093024000000000009 /* KakaoSDKUser */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		8805076D30232302009DB91B /* ONEULSIK.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ONEULSIK.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA1000043024000000000004 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		880507AE30232499009DB91B /* Exceptions for "ONEULSIK" folder in "ONEULSIK" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				App/.gitkeep,
+				Features/Home/.gitkeep,
+				Features/Profile/.gitkeep,
+				Features/Record/.gitkeep,
 				Info.plist,
+				Models/.gitkeep,
+				Services/.gitkeep,
+				Shared/Components/.gitkeep,
+				Shared/Extensions/.gitkeep,
+				Stores/.gitkeep,
 			);
 			target = 8805076C30232302009DB91B /* ONEULSIK */;
 		};
@@ -36,6 +52,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA1000013024000000000001 /* KakaoSDKAuth in Frameworks */,
+				AA1000023024000000000002 /* KakaoSDKCommon in Frameworks */,
+				AA1000033024000000000003 /* KakaoSDKUser in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -45,6 +64,7 @@
 		8805076430232302009DB91B = {
 			isa = PBXGroup;
 			children = (
+				AA1000043024000000000004 /* Config.xcconfig */,
 				8805076F30232302009DB91B /* ONEULSIK */,
 				8805076E30232302009DB91B /* Products */,
 			);
@@ -78,6 +98,9 @@
 			);
 			name = ONEULSIK;
 			packageProductDependencies = (
+				AA1000073024000000000007 /* KakaoSDKAuth */,
+				AA1000083024000000000008 /* KakaoSDKCommon */,
+				AA1000093024000000000009 /* KakaoSDKUser */,
 			);
 			productName = ONEULSIK;
 			productReference = 8805076D30232302009DB91B /* ONEULSIK.app */;
@@ -107,6 +130,9 @@
 			);
 			mainGroup = 8805076430232302009DB91B;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AA1000063024000000000006 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8805076E30232302009DB91B /* Products */;
 			projectDirPath = "";
@@ -261,6 +287,7 @@
 		};
 		8805077930232303009DB91B /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA1000043024000000000004 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -294,6 +321,7 @@
 		};
 		8805077A30232303009DB91B /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA1000043024000000000004 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -347,6 +375,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA1000063024000000000006 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kakao/kakao-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.28.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA1000073024000000000007 /* KakaoSDKAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA1000063024000000000006 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKAuth;
+		};
+		AA1000083024000000000008 /* KakaoSDKCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA1000063024000000000006 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKCommon;
+		};
+		AA1000093024000000000009 /* KakaoSDKUser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA1000063024000000000006 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKUser;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8805076530232302009DB91B /* Project object */;
 }

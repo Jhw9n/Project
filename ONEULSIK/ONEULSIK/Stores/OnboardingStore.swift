@@ -30,4 +30,13 @@ final class OnboardingStore {
         profile.weightTenthsKG = weightTenthsKG
         try modelContext.save()
     }
+
+    func completeOnboarding(
+        with activityLevel: ActivityLevel,
+        for profile: UserProfile
+    ) throws {
+        profile.activityLevelRawValue = activityLevel.rawValue
+        profile.hasCompletedOnboarding = true
+        try modelContext.save()
+    }
 }

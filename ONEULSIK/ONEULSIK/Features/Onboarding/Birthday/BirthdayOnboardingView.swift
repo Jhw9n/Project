@@ -64,7 +64,7 @@ struct BirthdayOnboardingView: View {
                 .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 216)
+        .frame(height: 286)
     }
 }
 

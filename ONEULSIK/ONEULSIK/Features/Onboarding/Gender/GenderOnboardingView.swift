@@ -51,7 +51,7 @@ struct GenderOnboardingView: View {
 
             genderButton(for: .female)
         }
-        .frame(height: 158)
+        .frame(height: 198)
     }
 
     private func genderButton(for gender: Gender) -> some View {

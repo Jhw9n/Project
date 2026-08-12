@@ -6,6 +6,7 @@ struct OnboardingFlowView: View {
         case birthday
         case height
         case weight
+        case activity
     }
 
     @State private var step: Step
@@ -29,8 +30,10 @@ struct OnboardingFlowView: View {
             initialStep = .birthday
         } else if profile.heightCM == nil {
             initialStep = .height
-        } else {
+        } else if profile.weightTenthsKG == nil {
             initialStep = .weight
+        } else {
+            initialStep = .activity
         }
         _step = State(initialValue: initialStep)
     }
@@ -73,6 +76,15 @@ struct OnboardingFlowView: View {
             ) {
                 step = .height
             } onNext: {
+                step = .activity
+            }
+
+        case .activity:
+            ActivityOnboardingView(
+                profile: profile,
+                onboardingStore: onboardingStore
+            ) {
+                step = .weight
             }
         }
     }

@@ -9,6 +9,7 @@ final class UserProfile {
     var birthDate: Date?
     var heightCM: Int?
     var weightTenthsKG: Int?
+    var activityLevelRawValue: String?
     var hasCompletedOnboarding: Bool
     var createdAt: Date
 
@@ -19,6 +20,7 @@ final class UserProfile {
         birthDate: Date? = nil,
         heightCM: Int? = nil,
         weightTenthsKG: Int? = nil,
+        activityLevelRawValue: String? = nil,
         hasCompletedOnboarding: Bool = false,
         createdAt: Date = .now
     ) {
@@ -28,6 +30,7 @@ final class UserProfile {
         self.birthDate = birthDate
         self.heightCM = heightCM
         self.weightTenthsKG = weightTenthsKG
+        self.activityLevelRawValue = activityLevelRawValue
         self.hasCompletedOnboarding = hasCompletedOnboarding
         self.createdAt = createdAt
     }

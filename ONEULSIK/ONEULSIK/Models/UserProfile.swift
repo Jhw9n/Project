@@ -7,6 +7,7 @@ final class UserProfile {
     var nickname: String
     var genderRawValue: String?
     var birthDate: Date?
+    var heightCM: Int?
     var hasCompletedOnboarding: Bool
     var createdAt: Date
 
@@ -15,6 +16,7 @@ final class UserProfile {
         nickname: String,
         genderRawValue: String? = nil,
         birthDate: Date? = nil,
+        heightCM: Int? = nil,
         hasCompletedOnboarding: Bool = false,
         createdAt: Date = .now
     ) {
@@ -22,6 +24,7 @@ final class UserProfile {
         self.nickname = nickname
         self.genderRawValue = genderRawValue
         self.birthDate = birthDate
+        self.heightCM = heightCM
         self.hasCompletedOnboarding = hasCompletedOnboarding
         self.createdAt = createdAt
     }

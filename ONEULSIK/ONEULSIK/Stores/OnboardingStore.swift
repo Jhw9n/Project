@@ -20,4 +20,9 @@ final class OnboardingStore {
         profile.birthDate = birthDate
         try modelContext.save()
     }
+
+    func saveHeight(_ heightCM: Int, for profile: UserProfile) throws {
+        profile.heightCM = heightCM
+        try modelContext.save()
+    }
 }

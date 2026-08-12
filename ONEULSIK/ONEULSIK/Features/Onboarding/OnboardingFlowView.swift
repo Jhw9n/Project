@@ -4,6 +4,7 @@ struct OnboardingFlowView: View {
     enum Step {
         case gender
         case birthday
+        case height
     }
 
     @State private var step: Step
@@ -20,7 +21,15 @@ struct OnboardingFlowView: View {
         self.profile = profile
         self.onboardingStore = onboardingStore
         self.onExit = onExit
-        _step = State(initialValue: profile.genderRawValue == nil ? .gender : .birthday)
+        let initialStep: Step
+        if profile.genderRawValue == nil {
+            initialStep = .gender
+        } else if profile.birthDate == nil {
+            initialStep = .birthday
+        } else {
+            initialStep = .height
+        }
+        _step = State(initialValue: initialStep)
     }
 
     var body: some View {
@@ -40,6 +49,16 @@ struct OnboardingFlowView: View {
                 onboardingStore: onboardingStore
             ) {
                 step = .gender
+            } onNext: {
+                step = .height
+            }
+
+        case .height:
+            HeightOnboardingView(
+                profile: profile,
+                onboardingStore: onboardingStore
+            ) {
+                step = .birthday
             } onNext: {
             }
         }

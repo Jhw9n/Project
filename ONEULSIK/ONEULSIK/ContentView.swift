@@ -28,14 +28,13 @@ struct ContentView: View {
                     }
                     .padding()
                 } else {
-                    GenderOnboardingView(
+                    OnboardingFlowView(
                         profile: profile,
                         onboardingStore: onboardingStore
                     ) {
                         Task {
                             await authStore.logout()
                         }
-                    } onNext: {
                     }
                 }
             } else {

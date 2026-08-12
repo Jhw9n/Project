@@ -24,54 +24,21 @@ struct GenderOnboardingView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-
-            Text("당신의 성별을 알려주세요!")
-                .font(.pretendardSemiBold(18))
-                .foregroundStyle(Color("black01"))
-                .padding(.top, 40)
-
+        OnboardingScaffold(
+            title: "당신의 성별을 알려주세요!",
+            contentTopPadding: 140,
+            isNextEnabled: viewModel.isNextEnabled,
+            onBack: onBack
+        ) {
+            do {
+                try viewModel.saveSelection()
+                onNext()
+            } catch {
+                return
+            }
+        } content: {
             genderSelection
-                .padding(.top, 140)
-
-            Spacer(minLength: 24)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color("gray01").ignoresSafeArea())
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            OnboardingBottomButton(
-                title: "다음",
-                isEnabled: viewModel.isNextEnabled
-            ) {
-                do {
-                    try viewModel.saveSelection()
-                    onNext()
-                } catch {
-                    return
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 4)
-            .background(Color("gray01"))
-        }
-        .preferredColorScheme(.light)
-    }
-
-    private var header: some View {
-        HStack {
-            Button(action: onBack) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(Color("black01"))
-                    .frame(width: 48, height: 48)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("로그인 화면으로 돌아가기")
-
-            Spacer()
-        }
-        .frame(height: 56)
     }
 
     private var genderSelection: some View {

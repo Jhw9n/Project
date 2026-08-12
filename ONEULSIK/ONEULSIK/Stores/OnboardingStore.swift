@@ -25,4 +25,9 @@ final class OnboardingStore {
         profile.heightCM = heightCM
         try modelContext.save()
     }
+
+    func saveWeight(_ weightTenthsKG: Int, for profile: UserProfile) throws {
+        profile.weightTenthsKG = weightTenthsKG
+        try modelContext.save()
+    }
 }

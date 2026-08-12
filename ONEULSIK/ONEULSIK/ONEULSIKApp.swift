@@ -14,6 +14,7 @@ import SwiftUI
 struct ONEULSIKApp: App {
     private let modelContainer: ModelContainer
     @State private var authStore: AuthStore
+    private let onboardingStore: OnboardingStore
 
     init() {
         do {
@@ -22,6 +23,7 @@ struct ONEULSIKApp: App {
             _authStore = State(
                 initialValue: AuthStore(modelContext: modelContainer.mainContext)
             )
+            onboardingStore = OnboardingStore(modelContext: modelContainer.mainContext)
         } catch {
             fatalError("SwiftData ModelContainer 생성 실패: \(error)")
         }
@@ -35,6 +37,7 @@ struct ONEULSIKApp: App {
         WindowGroup {
             ContentView()
                 .environment(authStore)
+                .environment(onboardingStore)
                 .onOpenURL { url in
                     if AuthApi.isKakaoTalkLoginUrl(url) {
                         _ = AuthController.handleOpenUrl(url: url)

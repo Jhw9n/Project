@@ -10,12 +10,16 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(OnboardingStore.self) private var onboardingStore
+    @Environment(MealRecordStore.self) private var mealRecordStore
 
     var body: some View {
         Group {
             if let profile = authStore.currentProfile {
                 if profile.hasCompletedOnboarding {
-                    MainTabView(profile: profile) {
+                    MainTabView(
+                        profile: profile,
+                        mealRecordStore: mealRecordStore
+                    ) {
                         Task {
                             await authStore.logout()
                         }

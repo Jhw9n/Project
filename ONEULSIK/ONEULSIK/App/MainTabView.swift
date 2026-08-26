@@ -1,14 +1,19 @@
+import SwiftData
 import SwiftUI
 
 struct MainTabView: View {
     let profile: UserProfile
+    let mealRecordStore: MealRecordStore
     let onLogout: () -> Void
 
     @State private var selectedTab = MainTab.home
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            HomeView(profile: profile)
+            HomeView(
+                profile: profile,
+                mealRecordStore: mealRecordStore
+            )
                 .tag(MainTab.home)
 
             RecordView()
@@ -114,8 +119,48 @@ private struct MainTabBar: View {
 }
 
 #Preview {
-    MainTabView(
-        profile: UserProfile(kakaoUserID: 1, nickname: "박정환"),
-        onLogout: {}
-    )
+    MainTabViewPreview()
+}
+
+private struct MainTabViewPreview: View {
+    private let container: ModelContainer
+    private let profile: UserProfile
+    private let mealRecordStore: MealRecordStore
+
+    init() {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try! ModelContainer(
+            for: UserProfile.self,
+            MealRecord.self,
+            configurations: configuration
+        )
+        let context = container.mainContext
+        let profile = UserProfile(
+            kakaoUserID: 1,
+            nickname: "박정환",
+            genderRawValue: Gender.male.rawValue,
+            birthDate: Calendar.current.date(
+                from: DateComponents(year: 1998, month: 3, day: 15)
+            ),
+            heightCM: 178,
+            weightTenthsKG: 780,
+            activityLevelRawValue: ActivityLevel.active.rawValue,
+            hasCompletedOnboarding: true
+        )
+        context.insert(profile)
+        try? context.save()
+
+        self.container = container
+        self.profile = profile
+        mealRecordStore = MealRecordStore(modelContext: context)
+    }
+
+    var body: some View {
+        MainTabView(
+            profile: profile,
+            mealRecordStore: mealRecordStore,
+            onLogout: {}
+        )
+        .modelContainer(container)
+    }
 }

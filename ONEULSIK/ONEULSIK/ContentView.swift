@@ -10,23 +10,20 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(OnboardingStore.self) private var onboardingStore
+    @Environment(MealRecordStore.self) private var mealRecordStore
 
     var body: some View {
         Group {
             if let profile = authStore.currentProfile {
                 if profile.hasCompletedOnboarding {
-                    VStack(spacing: 20) {
-                        Text("\(profile.nickname)님, 반가워요")
-                            .font(.pretendardBold(24))
-
-                        Button("로그아웃") {
-                            Task {
-                                await authStore.logout()
-                            }
+                    MainTabView(
+                        profile: profile,
+                        mealRecordStore: mealRecordStore
+                    ) {
+                        Task {
+                            await authStore.logout()
                         }
-                        .font(.pretendardSemiBold(16))
                     }
-                    .padding()
                 } else {
                     OnboardingFlowView(
                         profile: profile,

@@ -11,14 +11,14 @@ struct HealthFeedbackCard: View {
                 .frame(width: 48, height: 48)
 
             Text(message)
-                .font(.pretendardMedium(16))
+                .font(.pretendardMedium(14))
                 .foregroundStyle(Color(red: 33 / 255, green: 33 / 255, blue: 47 / 255))
-                .lineSpacing(3)
+                .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity)
-        .frame(height: 88)
+        .frame(height: 84)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
     }
 }

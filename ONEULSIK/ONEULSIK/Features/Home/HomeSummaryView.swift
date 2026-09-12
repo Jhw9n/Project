@@ -70,9 +70,9 @@ struct HomeSummaryView: View {
             }
             .foregroundStyle(Color.white)
             .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.top, 16)
         }
-        .frame(height: 400, alignment: .top)
+        .frame(height: 388, alignment: .top)
         .background {
             UnevenRoundedRectangle(
                 topLeadingRadius: 0,
@@ -174,7 +174,7 @@ private struct HomeProgressBar: View {
                     .frame(width: geometry.size.width * min(max(progress, 0), 1))
             }
         }
-        .frame(height: 12)
+        .frame(height: 10)
         .accessibilityValue("\(Int(progress * 100))퍼센트")
     }
 }

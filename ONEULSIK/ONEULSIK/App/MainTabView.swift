@@ -4,6 +4,8 @@ import SwiftUI
 struct MainTabView: View {
     let profile: UserProfile
     let mealRecordStore: MealRecordStore
+    let onboardingStore: OnboardingStore
+    let weightRecordStore: WeightRecordStore
     let onLogout: () -> Void
 
     @State private var selectedTab = MainTab.home
@@ -19,7 +21,12 @@ struct MainTabView: View {
             RecordView()
                 .tag(MainTab.record)
 
-            ProfileView(profile: profile, onLogout: onLogout)
+            ProfileView(
+                profile: profile,
+                onboardingStore: onboardingStore,
+                weightRecordStore: weightRecordStore,
+                onLogout: onLogout
+            )
                 .tag(MainTab.profile)
         }
         .toolbar(.hidden, for: .tabBar)
@@ -126,12 +133,15 @@ private struct MainTabViewPreview: View {
     private let container: ModelContainer
     private let profile: UserProfile
     private let mealRecordStore: MealRecordStore
+    private let onboardingStore: OnboardingStore
+    private let weightRecordStore: WeightRecordStore
 
     init() {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
             for: UserProfile.self,
             MealRecord.self,
+            WeightRecord.self,
             configurations: configuration
         )
         let context = container.mainContext
@@ -153,12 +163,16 @@ private struct MainTabViewPreview: View {
         self.container = container
         self.profile = profile
         mealRecordStore = MealRecordStore(modelContext: context)
+        onboardingStore = OnboardingStore(modelContext: context)
+        weightRecordStore = WeightRecordStore(modelContext: context)
     }
 
     var body: some View {
         MainTabView(
             profile: profile,
             mealRecordStore: mealRecordStore,
+            onboardingStore: onboardingStore,
+            weightRecordStore: weightRecordStore,
             onLogout: {}
         )
         .modelContainer(container)

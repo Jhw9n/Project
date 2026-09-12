@@ -4,9 +4,28 @@ struct OnboardingScaffold<Content: View>: View {
     let title: String
     let contentTopPadding: CGFloat
     let isNextEnabled: Bool
+    let primaryButtonTitle: String
     let onBack: () -> Void
     let onNext: () -> Void
     @ViewBuilder let content: () -> Content
+
+    init(
+        title: String,
+        contentTopPadding: CGFloat,
+        isNextEnabled: Bool,
+        primaryButtonTitle: String = "다음",
+        onBack: @escaping () -> Void,
+        onNext: @escaping () -> Void,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.contentTopPadding = contentTopPadding
+        self.isNextEnabled = isNextEnabled
+        self.primaryButtonTitle = primaryButtonTitle
+        self.onBack = onBack
+        self.onNext = onNext
+        self.content = content
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,7 +45,7 @@ struct OnboardingScaffold<Content: View>: View {
         .background(Color("gray01").ignoresSafeArea())
         .safeAreaInset(edge: .bottom, spacing: 0) {
             OnboardingBottomButton(
-                title: "다음",
+                title: primaryButtonTitle,
                 isEnabled: isNextEnabled,
                 action: onNext
             )

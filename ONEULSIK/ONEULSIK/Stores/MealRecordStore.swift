@@ -33,6 +33,36 @@ final class MealRecordStore {
         try modelContext.save()
     }
 
+    func insert(
+        food: FoodCatalogItem,
+        servingCount: Double,
+        mealType: MealType,
+        recordedAt: Date,
+        kakaoUserID: Int64
+    ) throws {
+        let nutrition = food.nutrition(for: servingCount)
+        let record = MealRecord(
+            kakaoUserID: kakaoUserID,
+            recordedAt: recordedAt,
+            mealTypeRawValue: mealType.rawValue,
+            foodID: food.id,
+            foodName: food.name,
+            servingUnit: food.servingUnit,
+            servingGrams: food.servingGrams,
+            servingCount: servingCount,
+            calories: nutrition.calories,
+            carbohydrateGrams: nutrition.carbohydrateGrams,
+            proteinGrams: nutrition.proteinGrams,
+            fatGrams: nutrition.fatGrams
+        )
+        try insert(record)
+    }
+
+    func delete(_ record: MealRecord) throws {
+        modelContext.delete(record)
+        try modelContext.save()
+    }
+
     static var preview: MealRecordStore {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(

@@ -16,12 +16,14 @@ struct ONEULSIKApp: App {
     @State private var authStore: AuthStore
     private let onboardingStore: OnboardingStore
     private let mealRecordStore: MealRecordStore
+    private let weightRecordStore: WeightRecordStore
 
     init() {
         do {
             let modelContainer = try ModelContainer(
                 for: UserProfile.self,
-                MealRecord.self
+                MealRecord.self,
+                WeightRecord.self
             )
             self.modelContainer = modelContainer
             _authStore = State(
@@ -29,6 +31,7 @@ struct ONEULSIKApp: App {
             )
             onboardingStore = OnboardingStore(modelContext: modelContainer.mainContext)
             mealRecordStore = MealRecordStore(modelContext: modelContainer.mainContext)
+            weightRecordStore = WeightRecordStore(modelContext: modelContainer.mainContext)
         } catch {
             fatalError("SwiftData ModelContainer 생성 실패: \(error)")
         }
@@ -44,6 +47,7 @@ struct ONEULSIKApp: App {
                 .environment(authStore)
                 .environment(onboardingStore)
                 .environment(mealRecordStore)
+                .environment(weightRecordStore)
                 .onOpenURL { url in
                     if AuthApi.isKakaoTalkLoginUrl(url) {
                         _ = AuthController.handleOpenUrl(url: url)

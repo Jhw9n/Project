@@ -4,12 +4,16 @@ import SwiftUI
 struct ActivityOnboardingView: View {
     @State private var viewModel: ActivityOnboardingViewModel
 
+    let primaryButtonTitle: String
     let onBack: () -> Void
+    let onComplete: () -> Void
 
     init(
         profile: UserProfile,
         onboardingStore: OnboardingStore,
-        onBack: @escaping () -> Void
+        primaryButtonTitle: String = "다음",
+        onBack: @escaping () -> Void,
+        onComplete: @escaping () -> Void = {}
     ) {
         _viewModel = State(
             initialValue: ActivityOnboardingViewModel(
@@ -17,7 +21,9 @@ struct ActivityOnboardingView: View {
                 onboardingStore: onboardingStore
             )
         )
+        self.primaryButtonTitle = primaryButtonTitle
         self.onBack = onBack
+        self.onComplete = onComplete
     }
 
     var body: some View {
@@ -25,10 +31,12 @@ struct ActivityOnboardingView: View {
             title: "당신의 활동 수준을 알려주세요!",
             contentTopPadding: 184,
             isNextEnabled: viewModel.isNextEnabled,
+            primaryButtonTitle: primaryButtonTitle,
             onBack: onBack
         ) {
             do {
                 try viewModel.completeOnboarding()
+                onComplete()
             } catch {
                 return
             }

@@ -4,12 +4,14 @@ import SwiftUI
 struct HeightOnboardingView: View {
     @State private var viewModel: HeightOnboardingViewModel
 
+    let primaryButtonTitle: String
     let onBack: () -> Void
     let onNext: () -> Void
 
     init(
         profile: UserProfile,
         onboardingStore: OnboardingStore,
+        primaryButtonTitle: String = "다음",
         onBack: @escaping () -> Void,
         onNext: @escaping () -> Void
     ) {
@@ -19,6 +21,7 @@ struct HeightOnboardingView: View {
                 onboardingStore: onboardingStore
             )
         )
+        self.primaryButtonTitle = primaryButtonTitle
         self.onBack = onBack
         self.onNext = onNext
     }
@@ -28,6 +31,7 @@ struct HeightOnboardingView: View {
             title: "당신의 키를 알려주세요!",
             contentTopPadding: 0,
             isNextEnabled: true,
+            primaryButtonTitle: primaryButtonTitle,
             onBack: onBack
         ) {
             do {

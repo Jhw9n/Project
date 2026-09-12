@@ -4,12 +4,14 @@ import SwiftData
 struct GenderOnboardingView: View {
     @State private var viewModel: GenderOnboardingViewModel
 
+    let primaryButtonTitle: String
     let onBack: () -> Void
     let onNext: () -> Void
 
     init(
         profile: UserProfile,
         onboardingStore: OnboardingStore,
+        primaryButtonTitle: String = "다음",
         onBack: @escaping () -> Void,
         onNext: @escaping () -> Void
     ) {
@@ -19,6 +21,7 @@ struct GenderOnboardingView: View {
                 onboardingStore: onboardingStore
             )
         )
+        self.primaryButtonTitle = primaryButtonTitle
         self.onBack = onBack
         self.onNext = onNext
     }
@@ -28,6 +31,7 @@ struct GenderOnboardingView: View {
             title: "당신의 성별을 알려주세요!",
             contentTopPadding: 140,
             isNextEnabled: viewModel.isNextEnabled,
+            primaryButtonTitle: primaryButtonTitle,
             onBack: onBack
         ) {
             do {

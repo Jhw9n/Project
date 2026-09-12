@@ -4,12 +4,14 @@ import SwiftUI
 struct BirthdayOnboardingView: View {
     @State private var viewModel: BirthdayOnboardingViewModel
 
+    let primaryButtonTitle: String
     let onBack: () -> Void
     let onNext: () -> Void
 
     init(
         profile: UserProfile,
         onboardingStore: OnboardingStore,
+        primaryButtonTitle: String = "다음",
         onBack: @escaping () -> Void,
         onNext: @escaping () -> Void
     ) {
@@ -19,6 +21,7 @@ struct BirthdayOnboardingView: View {
                 onboardingStore: onboardingStore
             )
         )
+        self.primaryButtonTitle = primaryButtonTitle
         self.onBack = onBack
         self.onNext = onNext
     }
@@ -28,6 +31,7 @@ struct BirthdayOnboardingView: View {
             title: "당신의 생년월일을 알려주세요!",
             contentTopPadding: 104,
             isNextEnabled: true,
+            primaryButtonTitle: primaryButtonTitle,
             onBack: onBack
         ) {
             do {

@@ -11,6 +11,7 @@ struct ContentView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(OnboardingStore.self) private var onboardingStore
     @Environment(MealRecordStore.self) private var mealRecordStore
+    @Environment(WeightRecordStore.self) private var weightRecordStore
 
     var body: some View {
         Group {
@@ -18,7 +19,9 @@ struct ContentView: View {
                 if profile.hasCompletedOnboarding {
                     MainTabView(
                         profile: profile,
-                        mealRecordStore: mealRecordStore
+                        mealRecordStore: mealRecordStore,
+                        onboardingStore: onboardingStore,
+                        weightRecordStore: weightRecordStore
                     ) {
                         Task {
                             await authStore.logout()

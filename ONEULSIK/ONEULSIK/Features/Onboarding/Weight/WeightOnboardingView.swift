@@ -4,12 +4,14 @@ import SwiftUI
 struct WeightOnboardingView: View {
     @State private var viewModel: WeightOnboardingViewModel
 
+    let primaryButtonTitle: String
     let onBack: () -> Void
     let onNext: () -> Void
 
     init(
         profile: UserProfile,
         onboardingStore: OnboardingStore,
+        primaryButtonTitle: String = "다음",
         onBack: @escaping () -> Void,
         onNext: @escaping () -> Void
     ) {
@@ -19,6 +21,7 @@ struct WeightOnboardingView: View {
                 onboardingStore: onboardingStore
             )
         )
+        self.primaryButtonTitle = primaryButtonTitle
         self.onBack = onBack
         self.onNext = onNext
     }
@@ -28,6 +31,7 @@ struct WeightOnboardingView: View {
             title: "당신의 몸무게를 알려주세요!",
             contentTopPadding: 0,
             isNextEnabled: true,
+            primaryButtonTitle: primaryButtonTitle,
             onBack: onBack
         ) {
             do {
@@ -68,6 +72,7 @@ struct WeightOnboardingView: View {
     let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(
         for: UserProfile.self,
+        WeightRecord.self,
         configurations: configuration
     )
     let profile = UserProfile(

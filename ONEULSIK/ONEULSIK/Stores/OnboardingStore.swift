@@ -26,8 +26,19 @@ final class OnboardingStore {
         try modelContext.save()
     }
 
-    func saveWeight(_ weightTenthsKG: Int, for profile: UserProfile) throws {
+    func saveWeight(
+        _ weightTenthsKG: Int,
+        for profile: UserProfile,
+        recordedAt: Date = .now
+    ) throws {
         profile.weightTenthsKG = weightTenthsKG
+        modelContext.insert(
+            WeightRecord(
+                kakaoUserID: profile.kakaoUserID,
+                recordedAt: recordedAt,
+                weightTenthsKG: weightTenthsKG
+            )
+        )
         try modelContext.save()
     }
 

@@ -18,7 +18,7 @@ struct WeeklyWeightPoint: Identifiable, Equatable {
         recordedWeightTenthsKG.map(Self.formattedWeight)
     }
 
-    private static func formattedWeight(_ weightTenthsKG: Int) -> String {
+    nonisolated private static func formattedWeight(_ weightTenthsKG: Int) -> String {
         if weightTenthsKG.isMultiple(of: 10) {
             return "\(weightTenthsKG / 10)"
         }

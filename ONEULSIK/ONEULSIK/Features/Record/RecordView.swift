@@ -1,18 +1,381 @@
+import SwiftData
 import SwiftUI
 
 struct RecordView: View {
-    var body: some View {
-        ZStack {
-            Color.gray01
-                .ignoresSafeArea()
+    @State private var viewModel: RecordViewModel
+    @State private var detailMealType: MealType?
+    @State private var searchMealType: MealType?
 
-            Text("기록")
-                .font(.pretendardBold(24))
-                .foregroundStyle(Color.black01)
+    private let mealRecordStore: MealRecordStore
+
+    init(profile: UserProfile, mealRecordStore: MealRecordStore) {
+        self.mealRecordStore = mealRecordStore
+        _viewModel = State(
+            initialValue: RecordViewModel(
+                profile: profile,
+                mealRecordStore: mealRecordStore
+            )
+        )
+    }
+
+    var body: some View {
+        NoBounceScrollView {
+            VStack(spacing: 0) {
+                calendarHeader
+
+                dateSelector
+                    .padding(.top, 8)
+
+                nutritionSummary
+                    .padding(.top, 20)
+
+                mealList
+                    .padding(.top, 20)
+                    .padding(.bottom, 20)
+            }
         }
+        .background(Color.gray01)
+        .onAppear {
+            viewModel.reload()
+        }
+        .sheet(item: $detailMealType) { mealType in
+            MealDetailView(
+                mealType: mealType,
+                dateText: viewModel.dateText(viewModel.selectedDate),
+                records: viewModel.records(for: mealType),
+                onClose: { detailMealType = nil },
+                onDelete: viewModel.delete
+            )
+            .presentationDetents([.fraction(0.86)])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(20)
+        }
+        .fullScreenCover(item: $searchMealType, onDismiss: viewModel.reload) { mealType in
+            FoodSearchView(
+                profile: viewModel.profile,
+                mealType: mealType,
+                recordedAt: viewModel.selectedDate,
+                mealRecordStore: mealRecordStore,
+                onSaved: viewModel.reload
+            )
+        }
+    }
+
+    private var calendarHeader: some View {
+        HStack {
+            monthButton(systemName: "chevron.left", offset: -1)
+
+            Spacer()
+
+            Text(viewModel.monthTitle)
+                .font(.pretendardMedium(16))
+                .foregroundStyle(Color(red: 33 / 255, green: 33 / 255, blue: 47 / 255))
+
+            Spacer()
+
+            monthButton(systemName: "chevron.right", offset: 1)
+        }
+        .padding(.horizontal, 20)
+        .frame(height: 48)
+    }
+
+    private func monthButton(systemName: String, offset: Int) -> some View {
+        Button {
+            viewModel.moveMonth(by: offset)
+        } label: {
+            Image(systemName: systemName)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.gray03)
+                .frame(width: 44, height: 44)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var dateSelector: some View {
+        HStack(spacing: 8) {
+            ForEach(viewModel.weekDates, id: \.self) { date in
+                let isSelected = viewModel.isSelected(date)
+                Button {
+                    viewModel.select(date: date)
+                } label: {
+                    VStack(spacing: 3) {
+                        Text(viewModel.weekday(for: date))
+                            .font(.pretendardMedium(12))
+                            .foregroundStyle(isSelected ? Color.white : Color.gray03)
+
+                        Text(viewModel.day(for: date))
+                            .font(.pretendardSemiBold(14))
+                            .foregroundStyle(isSelected ? Color.white : Color.black01)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 58)
+                    .background(
+                        isSelected ? Color.green03 : Color.white,
+                        in: RoundedRectangle(cornerRadius: 16)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var nutritionSummary: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text(viewModel.totalNutrition.calories, format: .number.precision(.fractionLength(0)))
+                    .font(.pretendardSemiBold(36))
+
+                Text("kcal")
+                    .font(.pretendardSemiBold(24))
+            }
+
+            Text("권장 섭취량 : \(formatted(viewModel.recommendation.calories)) kcal")
+                .font(.pretendardBold(14))
+                .padding(.top, 4)
+
+            RecordProgressBar(
+                progress: viewModel.calorieProgress,
+                foregroundColor: .green02,
+                backgroundColor: .white,
+                height: 10
+            )
+            .padding(.top, 8)
+
+            HStack(spacing: 8) {
+                nutrientCard(
+                    title: "탄수화물",
+                    consumed: viewModel.totalNutrition.carbohydrateGrams,
+                    recommended: viewModel.recommendation.carbohydrateGrams
+                )
+                nutrientCard(
+                    title: "단백질",
+                    consumed: viewModel.totalNutrition.proteinGrams,
+                    recommended: viewModel.recommendation.proteinGrams
+                )
+                nutrientCard(
+                    title: "지방",
+                    consumed: viewModel.totalNutrition.fatGrams,
+                    recommended: viewModel.recommendation.fatGrams
+                )
+            }
+            .padding(.top, 14)
+        }
+        .foregroundStyle(Color.white)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .frame(height: 219, alignment: .top)
+        .background(Color.green03, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 16)
+    }
+
+    private func nutrientCard(
+        title: String,
+        consumed: Double,
+        recommended: Double
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.pretendardSemiBold(14))
+
+            HStack(spacing: 2) {
+                Text(formatted(consumed))
+                    .foregroundStyle(Color.black01)
+                Text("/")
+                    .foregroundStyle(Color.black01)
+                Text("\(formatted(recommended))g")
+                    .foregroundStyle(Color.gray03)
+            }
+            .font(.pretendardBold(14))
+            .padding(.top, 4)
+
+            Spacer(minLength: 5)
+
+            RecordProgressBar(
+                progress: viewModel.progress(consumed: consumed, recommended: recommended),
+                foregroundColor: .green03,
+                backgroundColor: Color(red: 232 / 255, green: 233 / 255, blue: 236 / 255)
+            )
+        }
+        .foregroundStyle(Color.black01)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity)
+        .frame(height: 88)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var mealList: some View {
+        VStack(spacing: 0) {
+            ForEach(MealType.allCases) { mealType in
+                mealRow(mealType)
+
+                if mealType != MealType.allCases.last {
+                    Rectangle()
+                        .fill(Color.gray02.opacity(0.65))
+                        .frame(height: 1)
+                        .padding(.horizontal, 14)
+                }
+            }
+        }
+        .frame(height: 286)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 16)
+    }
+
+    private func mealRow(_ mealType: MealType) -> some View {
+        let nutrition = viewModel.nutrition(for: mealType)
+        let targetCalories = viewModel.targetCalories(for: mealType)
+
+        return HStack(spacing: 0) {
+            Button {
+                detailMealType = mealType
+            } label: {
+                HStack(spacing: 14) {
+                    mealProgressIcon(
+                        mealType: mealType,
+                        progress: viewModel.progress(
+                            consumed: nutrition.calories,
+                            recommended: targetCalories
+                        )
+                    )
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(mealType.title)
+                            .font(.pretendardSemiBold(14))
+
+                        HStack(spacing: 2) {
+                            Text(formatted(nutrition.calories))
+                                .foregroundStyle(Color.black01)
+                            Text("/")
+                                .foregroundStyle(Color.black01)
+                            Text("\(formatted(targetCalories))kcal")
+                                .foregroundStyle(Color.gray03)
+                        }
+                        .font(.pretendardBold(14))
+                    }
+
+                    Spacer()
+                }
+                .foregroundStyle(Color.black01)
+                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity)
+                .frame(height: 69.5)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("\(mealType.title) 기록 상세 보기")
+
+            Button {
+                searchMealType = mealType
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Color.white)
+                    .frame(width: 20, height: 20)
+                    .background(Color.green03, in: Circle())
+                    .frame(width: 44, height: 56)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(mealType.title) 음식 추가")
+        }
+        .padding(.leading, 14)
+        .padding(.trailing, 8)
+        .frame(height: 69.5)
+    }
+
+    private func mealProgressIcon(mealType: MealType, progress: Double) -> some View {
+        ZStack {
+            Circle()
+                .stroke(
+                    Color(red: 232 / 255, green: 233 / 255, blue: 236 / 255),
+                    lineWidth: 5
+                )
+
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(Color.green03, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+
+            Image(mealType.iconAssetName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: mealType.iconSize.width, height: mealType.iconSize.height)
+        }
+        .frame(width: 48, height: 48)
+    }
+
+    private func formatted(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0)))
+    }
+}
+
+private struct RecordProgressBar: View {
+    let progress: Double
+    let foregroundColor: Color
+    let backgroundColor: Color
+    var height: CGFloat = 10
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(backgroundColor)
+
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(foregroundColor)
+                    .frame(width: geometry.size.width * min(max(progress, 0), 1))
+            }
+        }
+        .frame(height: height)
     }
 }
 
 #Preview {
-    RecordView()
+    RecordViewPreview()
+}
+
+private struct RecordViewPreview: View {
+    private let container: ModelContainer
+    private let profile: UserProfile
+    private let mealRecordStore: MealRecordStore
+
+    init() {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try! ModelContainer(
+            for: UserProfile.self,
+            MealRecord.self,
+            configurations: configuration
+        )
+        let context = container.mainContext
+        let profile = UserProfile(
+            kakaoUserID: 1,
+            nickname: "박정환",
+            genderRawValue: Gender.male.rawValue,
+            birthDate: Calendar.current.date(from: DateComponents(year: 1998, month: 3, day: 15)),
+            heightCM: 178,
+            weightTenthsKG: 741,
+            activityLevelRawValue: ActivityLevel.moderate.rawValue,
+            hasCompletedOnboarding: true
+        )
+        context.insert(profile)
+
+        let store = MealRecordStore(modelContext: context)
+        let food = FoodCatalogService().foods[0]
+        try? store.insert(
+            food: food,
+            servingCount: 1,
+            mealType: .breakfast,
+            recordedAt: .now,
+            kakaoUserID: profile.kakaoUserID
+        )
+
+        self.container = container
+        self.profile = profile
+        mealRecordStore = store
+    }
+
+    var body: some View {
+        RecordView(profile: profile, mealRecordStore: mealRecordStore)
+            .modelContainer(container)
+    }
 }

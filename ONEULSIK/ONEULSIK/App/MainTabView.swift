@@ -18,7 +18,10 @@ struct MainTabView: View {
             )
                 .tag(MainTab.home)
 
-            RecordView()
+            RecordView(
+                profile: profile,
+                mealRecordStore: mealRecordStore
+            )
                 .tag(MainTab.record)
 
             ProfileView(

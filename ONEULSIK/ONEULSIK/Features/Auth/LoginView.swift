@@ -55,3 +55,7 @@ struct KakaoLoginView: View {
         .accessibilityLabel("카카오로 로그인")
     }
 }
+
+#Preview("카카오 로그인") {
+    KakaoLoginView(onLogin: {})
+}

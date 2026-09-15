@@ -6,6 +6,7 @@ struct MainTabView: View {
     let mealRecordStore: MealRecordStore
     let onboardingStore: OnboardingStore
     let weightRecordStore: WeightRecordStore
+    let onDeleteAccount: () async -> Bool
     let onLogout: () -> Void
 
     @State private var selectedTab = MainTab.home
@@ -28,6 +29,7 @@ struct MainTabView: View {
                 profile: profile,
                 onboardingStore: onboardingStore,
                 weightRecordStore: weightRecordStore,
+                onDeleteAccount: onDeleteAccount,
                 onLogout: onLogout
             )
                 .tag(MainTab.profile)
@@ -176,6 +178,7 @@ private struct MainTabViewPreview: View {
             mealRecordStore: mealRecordStore,
             onboardingStore: onboardingStore,
             weightRecordStore: weightRecordStore,
+            onDeleteAccount: { true },
             onLogout: {}
         )
         .modelContainer(container)

@@ -21,7 +21,10 @@ struct ContentView: View {
                         profile: profile,
                         mealRecordStore: mealRecordStore,
                         onboardingStore: onboardingStore,
-                        weightRecordStore: weightRecordStore
+                        weightRecordStore: weightRecordStore,
+                        onDeleteAccount: {
+                            await authStore.deleteAccount()
+                        }
                     ) {
                         Task {
                             await authStore.logout()

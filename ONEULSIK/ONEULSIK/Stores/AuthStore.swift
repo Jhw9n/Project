@@ -68,6 +68,24 @@ final class AuthStore {
         }
     }
 
+    func deleteAccount() async -> Bool {
+        guard let profile = currentProfile, !isLoading else { return false }
+
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            try await authService.unlink()
+            try deleteLocalData(for: profile)
+            currentProfile = nil
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
     private func loadOrCreateProfile(for kakaoUser: KakaoUser) throws -> UserProfile {
         let userID = kakaoUser.id
         let descriptor = FetchDescriptor<UserProfile>(
@@ -89,5 +107,24 @@ final class AuthStore {
         modelContext.insert(profile)
         try modelContext.save()
         return profile
+    }
+
+    private func deleteLocalData(for profile: UserProfile) throws {
+        let userID = profile.kakaoUserID
+        let mealDescriptor = FetchDescriptor<MealRecord>(
+            predicate: #Predicate { record in
+                record.kakaoUserID == userID
+            }
+        )
+        let weightDescriptor = FetchDescriptor<WeightRecord>(
+            predicate: #Predicate { record in
+                record.kakaoUserID == userID
+            }
+        )
+
+        try modelContext.fetch(mealDescriptor).forEach(modelContext.delete)
+        try modelContext.fetch(weightDescriptor).forEach(modelContext.delete)
+        modelContext.delete(profile)
+        try modelContext.save()
     }
 }

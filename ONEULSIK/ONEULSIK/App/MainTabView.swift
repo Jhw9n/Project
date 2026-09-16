@@ -10,12 +10,14 @@ struct MainTabView: View {
     let onLogout: () -> Void
 
     @State private var selectedTab = MainTab.home
+    @State private var homeScrollToTopTrigger = 0
 
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeView(
                 profile: profile,
-                mealRecordStore: mealRecordStore
+                mealRecordStore: mealRecordStore,
+                scrollToTopTrigger: homeScrollToTopTrigger
             )
                 .tag(MainTab.home)
 
@@ -36,7 +38,16 @@ struct MainTabView: View {
         }
         .toolbar(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            MainTabBar(selectedTab: $selectedTab)
+            MainTabBar(selectedTab: $selectedTab) { tab in
+                if tab == .home {
+                    homeScrollToTopTrigger += 1
+                }
+            }
+        }
+        .onChange(of: selectedTab) { previousTab, currentTab in
+            if previousTab != .home, currentTab == .home {
+                homeScrollToTopTrigger += 1
+            }
         }
     }
 }
@@ -72,12 +83,17 @@ private enum MainTab: CaseIterable {
 
 private struct MainTabBar: View {
     @Binding var selectedTab: MainTab
+    let onReselect: (MainTab) -> Void
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(MainTab.allCases, id: \.self) { tab in
                 Button {
-                    selectedTab = tab
+                    if selectedTab == tab {
+                        onReselect(tab)
+                    } else {
+                        selectedTab = tab
+                    }
                 } label: {
                     VStack(spacing: 4) {
                         Image(tab.iconName)

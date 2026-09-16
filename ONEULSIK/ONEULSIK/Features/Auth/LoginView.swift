@@ -10,7 +10,7 @@ struct KakaoLoginView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    brand
+                    AuthBrandView()
 
                     Spacer(minLength: 32)
 
@@ -22,20 +22,6 @@ struct KakaoLoginView: View {
             }
         }
         .preferredColorScheme(.light)
-    }
-
-    private var brand: some View {
-        VStack(spacing: 24) {
-            Image("oneulsikLogo")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 160, height: 50)
-
-            Text("오늘의 식사를 더 건강하게")
-                .font(.pretendardSemiBold(18))
-                .foregroundStyle(.white)
-                .lineSpacing(7)
-        }
     }
 
     private var kakaoLoginButton: some View {
@@ -53,6 +39,22 @@ struct KakaoLoginView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("카카오로 로그인")
+    }
+}
+
+struct AuthBrandView: View {
+    var body: some View {
+        VStack(spacing: 24) {
+            Image("oneulsikLogo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 160, height: 50)
+
+            Text("오늘의 식사를 더 건강하게")
+                .font(.pretendardSemiBold(18))
+                .foregroundStyle(.white)
+                .lineSpacing(7)
+        }
     }
 }
 

@@ -8,6 +8,7 @@ final class AuthStore {
     private(set) var currentProfile: UserProfile?
     private(set) var isLoading = false
     private(set) var errorMessage: String?
+    private(set) var hasRestoredSession = false
 
     private let modelContext: ModelContext
     private let authService: KakaoAuthService
@@ -26,6 +27,7 @@ final class AuthStore {
     func restoreSession() async {
         guard !didRestoreSession else { return }
         didRestoreSession = true
+        defer { hasRestoredSession = true }
 
         guard AppConfiguration.kakaoNativeAppKey != nil else { return }
 

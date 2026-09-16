@@ -12,10 +12,13 @@ struct ContentView: View {
     @Environment(OnboardingStore.self) private var onboardingStore
     @Environment(MealRecordStore.self) private var mealRecordStore
     @Environment(WeightRecordStore.self) private var weightRecordStore
+    @State private var hasMetMinimumSplashDuration = false
 
     var body: some View {
         Group {
-            if let profile = authStore.currentProfile {
+            if !authStore.hasRestoredSession || !hasMetMinimumSplashDuration {
+                SplashView()
+            } else if let profile = authStore.currentProfile {
                 if profile.hasCompletedOnboarding {
                     MainTabView(
                         profile: profile,
@@ -50,6 +53,10 @@ struct ContentView: View {
         }
         .task {
             await authStore.restoreSession()
+        }
+        .task {
+            try? await Task.sleep(for: .milliseconds(800))
+            hasMetMinimumSplashDuration = true
         }
     }
 }

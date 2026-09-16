@@ -84,7 +84,7 @@ struct ProfileView: View {
                 Image("profileSetting")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 24, height: 24)
+                    .frame(width: 22, height: 22)
                     .frame(width: 48, height: 48)
             }
             .buttonStyle(.plain)

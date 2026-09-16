@@ -4,8 +4,6 @@ import SwiftUI
 struct WeeklyCalorieChart: View {
     let viewModel: HomeViewModel
 
-    private let signupDate: Date
-
     private var indexedPoints: [(offset: Int, element: DailyCaloriePoint)] {
         Array(viewModel.dailyCaloriePoints.enumerated())
     }
@@ -18,11 +16,6 @@ struct WeeklyCalorieChart: View {
         Double(max(viewModel.dailyCaloriePoints.count - 7, 0)) - 0.5
     }
 
-    init(viewModel: HomeViewModel) {
-        self.viewModel = viewModel
-        signupDate = Calendar.current.startOfDay(for: viewModel.profile.createdAt)
-    }
-
     var body: some View {
         Chart {
             ForEach(indexedPoints, id: \.element.id) { index, point in
@@ -31,7 +24,7 @@ struct WeeklyCalorieChart: View {
                     y: .value("섭취 칼로리", point.calories),
                     width: .fixed(24)
                 )
-                .foregroundStyle(point.isBeforeSignup ? Color.gray02.opacity(0.35) : Color.green03)
+                .foregroundStyle(Color.green03)
             }
 
             RuleMark(y: .value("권장 섭취량", viewModel.recommendation.calories))
@@ -65,13 +58,13 @@ struct WeeklyCalorieChart: View {
                         let date = viewModel.dailyCaloriePoints[index].date
                         Text(weekday(for: date))
                             .font(.pretendardSemiBold(11))
-                            .foregroundStyle(date < signupDate ? Color.gray02 : Color.black01)
+                            .foregroundStyle(Color.black01)
                             .offset(x: -10)
                     }
                 }
             }
         }
-        .chartScrollableAxes(.horizontal)
+        .chartScrollableAxes(viewModel.dailyCaloriePoints.count > 7 ? .horizontal : [])
         .chartXVisibleDomain(length: 7)
         .chartScrollPosition(initialX: initialScrollPosition)
         .frame(height: 220)

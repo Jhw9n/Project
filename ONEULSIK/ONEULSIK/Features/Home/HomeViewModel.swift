@@ -4,7 +4,6 @@ import Observation
 struct DailyCaloriePoint: Identifiable {
     let date: Date
     let calories: Double
-    let isBeforeSignup: Bool
 
     var id: Date { date }
 }
@@ -69,7 +68,10 @@ final class HomeViewModel {
         ) ?? .fallback
 
         let today = calendar.startOfDay(for: now)
-        let firstDate = calendar.date(byAdding: .day, value: -27, to: today) ?? today
+        let signupDate = calendar.startOfDay(for: profile.createdAt)
+        let oldestAllowedDate = calendar.date(byAdding: .day, value: -27, to: today) ?? today
+        let minimumVisibleDate = calendar.date(byAdding: .day, value: -6, to: today) ?? today
+        let firstDate = max(oldestAllowedDate, min(signupDate, minimumVisibleDate))
         let endDate = calendar.date(byAdding: .day, value: 1, to: today) ?? now
         let records = (try? mealRecordStore.records(
             for: profile.kakaoUserID,
@@ -81,8 +83,8 @@ final class HomeViewModel {
             records.filter { calendar.isDate($0.recordedAt, inSameDayAs: today) }
         )
 
-        let signupDate = calendar.startOfDay(for: profile.createdAt)
-        dailyCaloriePoints = (0..<28).compactMap { dayOffset in
+        let dayCount = calendar.dateComponents([.day], from: firstDate, to: today).day ?? 6
+        dailyCaloriePoints = (0...dayCount).compactMap { dayOffset in
             guard let date = calendar.date(byAdding: .day, value: dayOffset, to: firstDate) else {
                 return nil
             }
@@ -92,8 +94,7 @@ final class HomeViewModel {
 
             return DailyCaloriePoint(
                 date: date,
-                calories: calories,
-                isBeforeSignup: date < signupDate
+                calories: calories
             )
         }
     }

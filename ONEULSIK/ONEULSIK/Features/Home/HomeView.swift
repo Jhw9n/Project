@@ -5,7 +5,14 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var isShowingNotificationNotice = false
 
-    init(profile: UserProfile, mealRecordStore: MealRecordStore) {
+    private let scrollToTopTrigger: Int
+
+    init(
+        profile: UserProfile,
+        mealRecordStore: MealRecordStore,
+        scrollToTopTrigger: Int = 0
+    ) {
+        self.scrollToTopTrigger = scrollToTopTrigger
         _viewModel = State(
             initialValue: HomeViewModel(
                 profile: profile,
@@ -16,7 +23,7 @@ struct HomeView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            NoBounceScrollView {
+            NoBounceScrollView(scrollToTopTrigger: scrollToTopTrigger) {
                 LazyVStack(spacing: 0) {
                     HomeSummaryView(
                         viewModel: viewModel,
@@ -41,6 +48,9 @@ struct HomeView: View {
             .ignoresSafeArea(edges: .top)
         }
         .onAppear {
+            viewModel.reload()
+        }
+        .onChange(of: scrollToTopTrigger) {
             viewModel.reload()
         }
         .alert("알림", isPresented: $isShowingNotificationNotice) {

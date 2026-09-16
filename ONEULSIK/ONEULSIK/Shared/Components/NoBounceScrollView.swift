@@ -3,13 +3,18 @@ import UIKit
 
 struct NoBounceScrollView<Content: View>: UIViewControllerRepresentable {
     let content: Content
+    let scrollToTopTrigger: Int
 
-    init(@ViewBuilder content: () -> Content) {
+    init(
+        scrollToTopTrigger: Int = 0,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.scrollToTopTrigger = scrollToTopTrigger
         self.content = content()
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(content: content)
+        Coordinator(content: content, scrollToTopTrigger: scrollToTopTrigger)
     }
 
     func makeUIViewController(context: Context) -> UIViewController {
@@ -53,14 +58,20 @@ struct NoBounceScrollView<Content: View>: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
         context.coordinator.hostingController.rootView = content
         context.coordinator.scrollView?.bounces = false
+
+        guard context.coordinator.scrollToTopTrigger != scrollToTopTrigger else { return }
+        context.coordinator.scrollToTopTrigger = scrollToTopTrigger
+        context.coordinator.scrollView?.setContentOffset(.zero, animated: true)
     }
 
     final class Coordinator {
         let hostingController: UIHostingController<Content>
         weak var scrollView: UIScrollView?
+        var scrollToTopTrigger: Int
 
-        init(content: Content) {
+        init(content: Content, scrollToTopTrigger: Int = 0) {
             hostingController = UIHostingController(rootView: content)
+            self.scrollToTopTrigger = scrollToTopTrigger
         }
     }
 }

@@ -22,7 +22,7 @@ struct HomeSummaryView: View {
                     Text("kcal")
                         .font(.pretendardSemiBold(24))
                 }
-                .frame(height: 65)
+                .frame(height: 68)
 
                 Text("권장 섭취량 : \(formatted(viewModel.recommendation.calories)) kcal")
                     .font(.pretendardBold(16))

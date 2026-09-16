@@ -17,13 +17,16 @@ final class RecordViewModel {
         mealRecordStore: MealRecordStore,
         selectedDate: Date = .now
     ) {
-        self.profile = profile
-        self.mealRecordStore = mealRecordStore
-        self.selectedDate = selectedDate
-
         var calendar = Calendar.current
         calendar.locale = Locale(identifier: "ko_KR")
         calendar.firstWeekday = 1
+
+        let today = calendar.startOfDay(for: .now)
+        let initialDate = min(calendar.startOfDay(for: selectedDate), today)
+
+        self.profile = profile
+        self.mealRecordStore = mealRecordStore
+        self.selectedDate = initialDate
         self.calendar = calendar
 
         recommendation = NutritionCalculator.recommendation(
@@ -33,17 +36,25 @@ final class RecordViewModel {
         reload()
     }
 
-    var weekDates: [Date] {
-        guard let startDate = calendar.dateInterval(of: .weekOfYear, for: selectedDate)?.start else {
-            return [selectedDate]
+    var visibleDates: [Date] {
+        (-6...6).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: selectedDate)
         }
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: startDate) }
     }
 
     var monthTitle: String {
         let year = calendar.component(.year, from: selectedDate)
         let month = calendar.component(.month, from: selectedDate)
         return "\(year)년 \(month)월"
+    }
+
+    var canMoveForward: Bool {
+        guard let selectedMonth = calendar.dateInterval(of: .month, for: selectedDate)?.start,
+              let currentMonth = calendar.dateInterval(of: .month, for: .now)?.start
+        else {
+            return false
+        }
+        return selectedMonth < currentMonth
     }
 
     var totalNutrition: NutritionValues {
@@ -55,13 +66,53 @@ final class RecordViewModel {
     }
 
     func select(date: Date) {
+        guard isSelectable(date) else { return }
         selectedDate = date
         reload()
     }
 
+    @discardableResult
+    func moveDay(by value: Int) -> Int {
+        guard let date = calendar.date(byAdding: .day, value: value, to: selectedDate) else {
+            return 0
+        }
+
+        let previousDate = selectedDate
+        select(date: min(date, calendar.startOfDay(for: .now)))
+        return calendar.dateComponents([.day], from: previousDate, to: selectedDate).day ?? 0
+    }
+
+    func isSelectable(_ date: Date) -> Bool {
+        date <= calendar.startOfDay(for: .now)
+    }
+
     func moveMonth(by value: Int) {
-        guard let date = calendar.date(byAdding: .month, value: value, to: selectedDate) else { return }
-        selectedDate = date
+        guard let selectedMonth = calendar.dateInterval(of: .month, for: selectedDate)?.start,
+              let targetMonth = calendar.date(byAdding: .month, value: value, to: selectedMonth),
+              let currentMonth = calendar.dateInterval(of: .month, for: .now)?.start
+        else {
+            return
+        }
+
+        let today = calendar.startOfDay(for: .now)
+        let adjustedMonth = min(targetMonth, currentMonth)
+        guard adjustedMonth != selectedMonth,
+              let monthInterval = calendar.dateInterval(of: .month, for: adjustedMonth)
+        else {
+            return
+        }
+
+        let preferredDay = calendar.component(.day, from: selectedDate)
+        let lastDate = calendar.date(byAdding: .day, value: -1, to: monthInterval.end) ?? today
+        let lastDay = calendar.component(.day, from: lastDate)
+        let selectedDay = min(preferredDay, lastDay)
+        let date = calendar.date(
+            byAdding: .day,
+            value: selectedDay - 1,
+            to: monthInterval.start
+        ) ?? monthInterval.start
+
+        selectedDate = min(date, today)
         reload()
     }
 

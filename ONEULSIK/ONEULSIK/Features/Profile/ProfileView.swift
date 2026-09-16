@@ -7,12 +7,14 @@ struct ProfileView: View {
     @State private var isShowingSettings = false
 
     private let onboardingStore: OnboardingStore
+    private let onDeleteAccount: () async -> Bool
     private let onLogout: () -> Void
 
     init(
         profile: UserProfile,
         onboardingStore: OnboardingStore,
         weightRecordStore: WeightRecordStore,
+        onDeleteAccount: @escaping () async -> Bool,
         onLogout: @escaping () -> Void
     ) {
         _viewModel = State(
@@ -22,6 +24,7 @@ struct ProfileView: View {
             )
         )
         self.onboardingStore = onboardingStore
+        self.onDeleteAccount = onDeleteAccount
         self.onLogout = onLogout
     }
 
@@ -53,9 +56,19 @@ struct ProfileView: View {
                     transaction.disablesAnimations = true
                 }
         }
-        .confirmationDialog("설정", isPresented: $isShowingSettings) {
-            Button("로그아웃", role: .destructive, action: onLogout)
-            Button("취소", role: .cancel) {}
+        .fullScreenCover(isPresented: $isShowingSettings) {
+            SettingsView(
+                onBack: {
+                    withoutAnimation {
+                        isShowingSettings = false
+                    }
+                },
+                onLogout: onLogout,
+                onDeleteAccount: onDeleteAccount
+            )
+            .transaction { transaction in
+                transaction.disablesAnimations = true
+            }
         }
     }
 
@@ -64,12 +77,14 @@ struct ProfileView: View {
             Spacer()
 
             Button {
-                isShowingSettings = true
+                withoutAnimation {
+                    isShowingSettings = true
+                }
             } label: {
                 Image("profileSetting")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 24, height: 24)
+                    .frame(width: 22, height: 22)
                     .frame(width: 48, height: 48)
             }
             .buttonStyle(.plain)
@@ -330,6 +345,7 @@ private struct ProfileViewPreview: View {
             profile: profile,
             onboardingStore: onboardingStore,
             weightRecordStore: weightRecordStore,
+            onDeleteAccount: { true },
             onLogout: {}
         )
         .modelContainer(container)

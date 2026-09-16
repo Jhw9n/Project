@@ -23,7 +23,7 @@ struct RecordView: View {
             VStack(spacing: 0) {
                 calendarHeader
 
-                dateSelector
+                RecordDateSelector(viewModel: viewModel)
                     .padding(.top, 8)
 
                 nutritionSummary
@@ -80,8 +80,12 @@ struct RecordView: View {
     }
 
     private func monthButton(systemName: String, offset: Int) -> some View {
-        Button {
-            viewModel.moveMonth(by: offset)
+        let isEnabled = offset < 0 || viewModel.canMoveForward
+
+        return Button {
+            withAnimation(.snappy(duration: 0.25)) {
+                viewModel.moveMonth(by: offset)
+            }
         } label: {
             Image(systemName: systemName)
                 .font(.system(size: 14, weight: .semibold))
@@ -89,35 +93,7 @@ struct RecordView: View {
                 .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
-    }
-
-    private var dateSelector: some View {
-        HStack(spacing: 8) {
-            ForEach(viewModel.weekDates, id: \.self) { date in
-                let isSelected = viewModel.isSelected(date)
-                Button {
-                    viewModel.select(date: date)
-                } label: {
-                    VStack(spacing: 3) {
-                        Text(viewModel.weekday(for: date))
-                            .font(.pretendardMedium(12))
-                            .foregroundStyle(isSelected ? Color.white : Color.gray03)
-
-                        Text(viewModel.day(for: date))
-                            .font(.pretendardSemiBold(14))
-                            .foregroundStyle(isSelected ? Color.white : Color.black01)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 58)
-                    .background(
-                        isSelected ? Color.green03 : Color.white,
-                        in: RoundedRectangle(cornerRadius: 16)
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 16)
+        .disabled(!isEnabled)
     }
 
     private var nutritionSummary: some View {
@@ -186,7 +162,7 @@ struct RecordView: View {
                 Text("\(formatted(recommended))g")
                     .foregroundStyle(Color.gray03)
             }
-            .font(.pretendardBold(14))
+            .font(.pretendardBold(13))
             .padding(.top, 4)
 
             Spacer(minLength: 5)
@@ -252,7 +228,7 @@ struct RecordView: View {
                             Text("\(formatted(targetCalories))kcal")
                                 .foregroundStyle(Color.gray03)
                         }
-                        .font(.pretendardBold(14))
+                        .font(.pretendardBold(13))
                     }
 
                     Spacer()
@@ -306,6 +282,155 @@ struct RecordView: View {
 
     private func formatted(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(0)))
+    }
+}
+
+private struct RecordDateSelector: View {
+    let viewModel: RecordViewModel
+
+    @State private var contentOffset: CGFloat = 0
+    @State private var requestedDayOffset = 0
+    @State private var appliedDayOffset = 0
+    @State private var isAnimatingDateSelection = false
+
+    private let dayWidth: CGFloat = 50
+
+    var body: some View {
+        ZStack {
+            dateButtons
+                .offset(x: contentOffset)
+
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.green03)
+                .frame(width: 42, height: 58)
+                .allowsHitTesting(false)
+
+            dateTexts(weekdayColor: .white, dayColor: .white)
+                .offset(x: contentOffset)
+                .mask {
+                    RoundedRectangle(cornerRadius: 16)
+                        .frame(width: 42, height: 58)
+                }
+                .allowsHitTesting(false)
+        }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity)
+        .frame(height: 58)
+        .clipped()
+        .contentShape(Rectangle())
+        .highPriorityGesture(dateDragGesture)
+        .sensoryFeedback(.selection, trigger: viewModel.selectedDate)
+    }
+
+    private var dateButtons: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(viewModel.visibleDates.enumerated()), id: \.offset) { index, date in
+                let offset = index - viewModel.visibleDates.count / 2
+                let isSelectable = viewModel.isSelectable(date)
+
+                Button {
+                    guard offset != 0 else { return }
+                    moveSelectedDate(by: offset)
+                } label: {
+                    dateText(
+                        for: date,
+                        weekdayColor: Color.gray03,
+                        dayColor: isSelectable ? Color.black01 : Color.black01.opacity(0.6)
+                    )
+                    .frame(width: 42, height: 58)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .disabled(!isSelectable || isAnimatingDateSelection)
+            }
+        }
+    }
+
+    private func dateTexts(weekdayColor: Color, dayColor: Color) -> some View {
+        HStack(spacing: 8) {
+            ForEach(Array(viewModel.visibleDates.enumerated()), id: \.offset) { _, date in
+                dateText(for: date, weekdayColor: weekdayColor, dayColor: dayColor)
+                    .frame(width: 42, height: 58)
+            }
+        }
+    }
+
+    private func dateText(
+        for date: Date,
+        weekdayColor: Color,
+        dayColor: Color
+    ) -> some View {
+        VStack(spacing: 3) {
+            Text(viewModel.weekday(for: date))
+                .font(.pretendardMedium(12))
+                .foregroundStyle(weekdayColor)
+
+            Text(viewModel.day(for: date))
+                .font(.pretendardSemiBold(14))
+                .foregroundStyle(dayColor)
+        }
+    }
+
+    private var dateDragGesture: some Gesture {
+        DragGesture(minimumDistance: 4)
+            .onChanged { value in
+                guard !isAnimatingDateSelection else { return }
+                guard abs(value.translation.width) > abs(value.translation.height) else {
+                    return
+                }
+                updateDrag(translation: value.translation.width)
+            }
+            .onEnded { _ in
+                guard !isAnimatingDateSelection else { return }
+                resetDrag()
+            }
+    }
+
+    private func updateDrag(translation: CGFloat) {
+        let nextRequestedOffset = Int((-translation / dayWidth).rounded())
+
+        if nextRequestedOffset != requestedDayOffset {
+            requestedDayOffset = nextRequestedOffset
+            let remainingOffset = nextRequestedOffset - appliedDayOffset
+            appliedDayOffset += viewModel.moveDay(by: remainingOffset)
+        }
+
+        let proposedOffset = translation + CGFloat(appliedDayOffset) * dayWidth
+        contentOffset = nextRequestedOffset > appliedDayOffset
+            ? max(proposedOffset, -4)
+            : proposedOffset
+    }
+
+    private func moveSelectedDate(by value: Int) {
+        guard value != 0, !isAnimatingDateSelection else { return }
+
+        isAnimatingDateSelection = true
+
+        withAnimation(.smooth(duration: 0.28)) {
+            contentOffset = CGFloat(-value) * dayWidth
+        }
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(280))
+
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                viewModel.moveDay(by: value)
+                contentOffset = 0
+                requestedDayOffset = 0
+                appliedDayOffset = 0
+                isAnimatingDateSelection = false
+            }
+        }
+    }
+
+    private func resetDrag() {
+        withAnimation(.smooth(duration: 0.25)) {
+            contentOffset = 0
+        }
+        requestedDayOffset = 0
+        appliedDayOffset = 0
     }
 }
 

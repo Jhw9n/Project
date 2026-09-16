@@ -10,6 +10,7 @@ struct FoodSearchView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var selectedFood: FoodCatalogItem?
+    @State private var shouldDismissAfterSaving = false
     @FocusState private var isSearchFocused: Bool
 
     private let catalog = FoodCatalogService()
@@ -30,10 +31,13 @@ struct FoodSearchView: View {
         }
         .background(Color.gray01)
         .preferredColorScheme(.light)
-        .sheet(item: $selectedFood) { food in
+        .sheet(item: $selectedFood, onDismiss: finishQuantitySelection) { food in
             FoodQuantityView(
                 food: food,
-                onCancel: { selectedFood = nil },
+                onCancel: {
+                    shouldDismissAfterSaving = false
+                    selectedFood = nil
+                },
                 onComplete: { servingCount in
                     save(food: food, servingCount: servingCount)
                 }
@@ -135,14 +139,26 @@ struct FoodSearchView: View {
     }
 
     private func save(food: FoodCatalogItem, servingCount: Double) {
-        try? mealRecordStore.insert(
-            food: food,
-            servingCount: servingCount,
-            mealType: mealType,
-            recordedAt: recordedAt,
-            kakaoUserID: profile.kakaoUserID
-        )
-        selectedFood = nil
+        do {
+            try mealRecordStore.insert(
+                food: food,
+                servingCount: servingCount,
+                mealType: mealType,
+                recordedAt: recordedAt,
+                kakaoUserID: profile.kakaoUserID
+            )
+            shouldDismissAfterSaving = true
+            selectedFood = nil
+        } catch {
+            return
+        }
+    }
+
+    private func finishQuantitySelection() {
+        guard shouldDismissAfterSaving else { return }
+
+        shouldDismissAfterSaving = false
         onSaved()
+        dismiss()
     }
 }

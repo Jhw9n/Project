@@ -4,15 +4,28 @@ import SwiftUI
 struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var isShowingNotificationNotice = false
+    @State private var isShowingAIReportNotice = false
+    @State private var aiReportState: AIWeeklyReportState
+    @State private var reportGenerationTask: Task<Void, Never>?
+    @State private var reportGenerationID: UUID?
 
     private let scrollToTopTrigger: Int
+    private let usesAutomaticAIAvailability: Bool
+    private let aiReportAvailabilityService = AIWeeklyReportAvailabilityService()
+    private let aiWeeklyReportService = AIWeeklyReportService()
 
     init(
         profile: UserProfile,
         mealRecordStore: MealRecordStore,
-        scrollToTopTrigger: Int = 0
+        scrollToTopTrigger: Int = 0,
+        aiReportState: AIWeeklyReportState? = nil
     ) {
         self.scrollToTopTrigger = scrollToTopTrigger
+        usesAutomaticAIAvailability = aiReportState == nil
+        _aiReportState = State(
+            initialValue: aiReportState
+                ?? AIWeeklyReportAvailabilityService().currentState()
+        )
         _viewModel = State(
             initialValue: HomeViewModel(
                 profile: profile,
@@ -32,9 +45,7 @@ struct HomeView: View {
                         isShowingNotificationNotice = true
                     }
 
-                    HomeSection(title: "건강 피드백") {
-                        HealthFeedbackCard(message: viewModel.feedbackMessage)
-                    }
+                    reportSection
                     .padding(.top, 30)
 
                     HomeSection(title: "주간 그래프") {
@@ -49,27 +60,210 @@ struct HomeView: View {
         }
         .onAppear {
             viewModel.reload()
+            refreshAIReportState()
         }
         .onChange(of: scrollToTopTrigger) {
             viewModel.reload()
+            refreshAIReportState()
         }
         .alert("알림", isPresented: $isShowingNotificationNotice) {
             Button("확인", role: .cancel) {}
         } message: {
             Text("알림 기능은 준비 중이에요.")
         }
+        .alert("주간 리포트", isPresented: $isShowingAIReportNotice) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text("상세 피드백 화면은 준비 중이에요.")
+        }
+    }
+
+    @ViewBuilder
+    private var reportSection: some View {
+        switch aiReportState {
+        case .available(let message):
+            HomeSection(
+                title: "AI 건강 피드백",
+                actionTitle: "주간 리포트",
+                action: {
+                    isShowingAIReportNotice = true
+                }
+            ) {
+                AIWeeklyReportCard(message: message)
+            }
+
+        case .loading:
+            HomeSection(
+                title: "AI 건강 피드백",
+                actionTitle: "주간 리포트",
+                action: {
+                    isShowingAIReportNotice = true
+                }
+            ) {
+                AIWeeklyReportCard(
+                    message: "이번 주 식단을 분석하고 있어요.",
+                    isLoading: true
+                )
+            }
+
+        case .unavailable:
+            HomeSection(title: "건강 피드백") {
+                HealthFeedbackCard(message: viewModel.feedbackMessage)
+            }
+        }
+    }
+
+    private func refreshAIReportState() {
+        guard usesAutomaticAIAvailability else { return }
+        guard aiReportAvailabilityService.currentState() != .unavailable else {
+            cancelAIReportGeneration()
+            aiReportState = .unavailable
+            return
+        }
+        guard let input = viewModel.weeklyReportInput else {
+            cancelAIReportGeneration()
+            aiReportState = .noData
+            return
+        }
+
+        if let cachedReport = aiWeeklyReportService.cachedReport(for: input) {
+            cancelAIReportGeneration()
+            aiReportState = .available(message: cachedReport)
+        } else {
+            generateAIWeeklyReport(for: input)
+        }
+    }
+
+    private func generateAIWeeklyReport(for input: AIWeeklyReportInput) {
+        reportGenerationTask?.cancel()
+        let generationID = UUID()
+        reportGenerationID = generationID
+        withAnimation(.easeInOut(duration: 0.2)) {
+            aiReportState = .loading
+        }
+
+        Task {
+            try? await Task.sleep(for: .seconds(30))
+            guard reportGenerationID == generationID else { return }
+
+            reportGenerationTask?.cancel()
+            reportGenerationID = nil
+            withAnimation(.easeInOut(duration: 0.2)) {
+                aiReportState = .generationFailed
+            }
+        }
+
+        reportGenerationTask = Task {
+            do {
+                let message = try await aiWeeklyReportService.generateReport(for: input)
+                guard !Task.isCancelled, reportGenerationID == generationID else { return }
+                reportGenerationID = nil
+                reportGenerationTask = nil
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    aiReportState = .available(message: message)
+                }
+            } catch {
+                guard !Task.isCancelled, reportGenerationID == generationID else { return }
+                reportGenerationID = nil
+                reportGenerationTask = nil
+                #if DEBUG
+                print("AI weekly report failed: \(error.localizedDescription)")
+                #endif
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    aiReportState = .generationFailed
+                }
+            }
+        }
+    }
+
+    private func cancelAIReportGeneration() {
+        reportGenerationTask?.cancel()
+        reportGenerationTask = nil
+        reportGenerationID = nil
     }
 }
 
 private struct HomeSection<Content: View>: View {
     let title: String
+    let actionTitle: String?
+    let isActionLoading: Bool
+    let isActionDisabled: Bool
+    let action: (() -> Void)?
     @ViewBuilder let content: Content
 
+    init(
+        title: String,
+        actionTitle: String? = nil,
+        isActionLoading: Bool = false,
+        isActionDisabled: Bool = false,
+        action: (() -> Void)? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.actionTitle = actionTitle
+        self.isActionLoading = isActionLoading
+        self.isActionDisabled = isActionDisabled
+        self.action = action
+        self.content = content()
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 11) {
-            Text(title)
-                .font(.pretendardSemiBold(16))
-                .foregroundStyle(Color.black01)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text(title)
+                    .font(.pretendardSemiBold(16))
+                    .foregroundStyle(Color.black01)
+
+                Spacer()
+
+                if let actionTitle, let action {
+                    Button(action: action) {
+                        HStack(spacing: 4) {
+                            if isActionLoading {
+                                ProgressView()
+                                    .controlSize(.mini)
+                                    .tint(Color.white)
+                            }
+
+                            Text(actionTitle)
+                                .font(.pretendardBold(10))
+                        }
+                        .foregroundStyle(Color.white)
+                        .frame(width: 62, height: 22)
+                        .background {
+                            MeshGradient(
+                                width: 3,
+                                height: 3,
+                                points: [
+                                    [0, 0], [0.5, 0], [1, 0],
+                                    [0, 0.5], [0.5, 0.5], [1, 0.5],
+                                    [0, 1], [0.5, 1], [1, 1]
+                                ],
+                                colors: [
+                                    Color(red: 1, green: 0.88, blue: 0.48),
+                                    Color(red: 1, green: 0.63, blue: 0.18),
+                                    Color(red: 1, green: 0.20, blue: 0.37),
+                                    Color(red: 0.78, green: 0.93, blue: 0.88),
+                                    Color(red: 0.83, green: 0.76, blue: 0.89),
+                                    Color(red: 0.76, green: 0.31, blue: 0.86),
+                                    Color(red: 0.40, green: 0.78, blue: 0.96),
+                                    Color(red: 0.21, green: 0.53, blue: 1),
+                                    Color(red: 0.55, green: 0.31, blue: 0.92)
+                                ]
+                            )
+                            .clipShape(Capsule())
+                        }
+                        .overlay {
+                            if isActionLoading || isActionDisabled {
+                                Capsule()
+                                    .fill(Color.gray03.opacity(0.65))
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isActionLoading || isActionDisabled)
+                }
+            }
 
             content
         }
@@ -77,16 +271,25 @@ private struct HomeSection<Content: View>: View {
     }
 }
 
-#Preview {
-    HomeViewPreview()
+#Preview("AI 지원") {
+    HomeViewPreview(aiReportState: .mockAvailable)
+}
+
+#Preview("AI 생성 중") {
+    HomeViewPreview(aiReportState: .loading)
+}
+
+#Preview("AI 미지원") {
+    HomeViewPreview(aiReportState: .unavailable)
 }
 
 private struct HomeViewPreview: View {
     private let container: ModelContainer
     private let profile: UserProfile
     private let mealRecordStore: MealRecordStore
+    private let aiReportState: AIWeeklyReportState
 
-    init() {
+    init(aiReportState: AIWeeklyReportState) {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
             for: UserProfile.self,
@@ -128,13 +331,15 @@ private struct HomeViewPreview: View {
 
         self.container = container
         self.profile = profile
+        self.aiReportState = aiReportState
         mealRecordStore = MealRecordStore(modelContext: context)
     }
 
     var body: some View {
         HomeView(
             profile: profile,
-            mealRecordStore: mealRecordStore
+            mealRecordStore: mealRecordStore,
+            aiReportState: aiReportState
         )
         .modelContainer(container)
     }

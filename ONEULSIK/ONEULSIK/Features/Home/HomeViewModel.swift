@@ -8,6 +8,18 @@ struct DailyCaloriePoint: Identifiable {
     var id: Date { date }
 }
 
+struct AIWeeklyNutritionDay {
+    let date: Date
+    let nutrition: NutritionValues
+}
+
+struct AIWeeklyReportInput {
+    let kakaoUserID: Int64
+    let weekStart: Date
+    let recordedDays: [AIWeeklyNutritionDay]
+    let recommendation: NutritionRecommendation
+}
+
 @Observable
 final class HomeViewModel {
     let profile: UserProfile
@@ -17,6 +29,7 @@ final class HomeViewModel {
     private(set) var recommendation: NutritionRecommendation
     private(set) var todayNutrition = NutritionValues.zero
     private(set) var dailyCaloriePoints: [DailyCaloriePoint] = []
+    private(set) var weeklyReportInput: AIWeeklyReportInput?
 
     init(
         profile: UserProfile,
@@ -97,6 +110,8 @@ final class HomeViewModel {
                 calories: calories
             )
         }
+
+        updateWeeklyReportInput(records: records, today: today)
     }
 
     func progress(consumed: Double, recommended: Double) -> Double {
@@ -106,5 +121,42 @@ final class HomeViewModel {
 
     private func totalNutrition(_ records: [MealRecord]) -> NutritionValues {
         records.reduce(.zero) { $0 + $1.nutritionValues }
+    }
+
+    private func updateWeeklyReportInput(records: [MealRecord], today: Date) {
+        let reportStartDate = calendar.date(byAdding: .day, value: -6, to: today) ?? today
+        let recordedDays = (0...6).compactMap { dayOffset -> AIWeeklyNutritionDay? in
+            guard let date = calendar.date(
+                byAdding: .day,
+                value: dayOffset,
+                to: reportStartDate
+            ) else {
+                return nil
+            }
+
+            let dayRecords = records.filter {
+                calendar.isDate($0.recordedAt, inSameDayAs: date)
+            }
+            guard !dayRecords.isEmpty else { return nil }
+
+            return AIWeeklyNutritionDay(
+                date: date,
+                nutrition: totalNutrition(dayRecords)
+            )
+        }
+
+        guard !recordedDays.isEmpty else {
+            weeklyReportInput = nil
+            return
+        }
+
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start
+            ?? reportStartDate
+        weeklyReportInput = AIWeeklyReportInput(
+            kakaoUserID: profile.kakaoUserID,
+            weekStart: weekStart,
+            recordedDays: recordedDays,
+            recommendation: recommendation
+        )
     }
 }

@@ -19,19 +19,21 @@ struct RecordView: View {
     }
 
     var body: some View {
-        NoBounceScrollView {
-            VStack(spacing: 0) {
-                calendarHeader
+        GeometryReader { geometry in
+            NoBounceScrollView {
+                VStack(spacing: 0) {
+                    calendarHeader
 
-                RecordDateSelector(viewModel: viewModel)
-                    .padding(.top, 8)
+                    RecordDateSelector(viewModel: viewModel)
+                        .padding(.top, 8)
 
-                nutritionSummary
-                    .padding(.top, 20)
+                    nutritionSummary
+                        .padding(.top, 20)
 
-                mealList
-                    .padding(.top, 20)
-                    .padding(.bottom, 20)
+                    mealList(height: max(286, geometry.size.height - 397))
+                        .padding(.top, 20)
+                        .padding(.bottom, 24)
+                }
             }
         }
         .background(Color.gray01)
@@ -181,10 +183,13 @@ struct RecordView: View {
         .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
     }
 
-    private var mealList: some View {
-        VStack(spacing: 0) {
+    private func mealList(height: CGFloat) -> some View {
+        let rowHeight = (height - CGFloat(MealType.allCases.count - 1))
+            / CGFloat(MealType.allCases.count)
+
+        return VStack(spacing: 0) {
             ForEach(MealType.allCases) { mealType in
-                mealRow(mealType)
+                mealRow(mealType, height: rowHeight)
 
                 if mealType != MealType.allCases.last {
                     Rectangle()
@@ -194,12 +199,12 @@ struct RecordView: View {
                 }
             }
         }
-        .frame(height: 286)
+        .frame(height: height)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
         .padding(.horizontal, 16)
     }
 
-    private func mealRow(_ mealType: MealType) -> some View {
+    private func mealRow(_ mealType: MealType, height: CGFloat) -> some View {
         let nutrition = viewModel.nutrition(for: mealType)
         let targetCalories = viewModel.targetCalories(for: mealType)
 
@@ -236,7 +241,7 @@ struct RecordView: View {
                 .foregroundStyle(Color.black01)
                 .contentShape(Rectangle())
                 .frame(maxWidth: .infinity)
-                .frame(height: 69.5)
+                .frame(height: height)
             }
             .buttonStyle(.plain)
             .accessibilityHint("\(mealType.title) 기록 상세 보기")
@@ -249,14 +254,14 @@ struct RecordView: View {
                     .foregroundStyle(Color.white)
                     .frame(width: 20, height: 20)
                     .background(Color.green03, in: Circle())
-                    .frame(width: 44, height: 56)
+                    .frame(width: 44, height: height)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("\(mealType.title) 음식 추가")
         }
         .padding(.leading, 14)
         .padding(.trailing, 8)
-        .frame(height: 69.5)
+        .frame(height: height)
     }
 
     private func mealProgressIcon(mealType: MealType, progress: Double) -> some View {
@@ -293,51 +298,66 @@ private struct RecordDateSelector: View {
     @State private var appliedDayOffset = 0
     @State private var isAnimatingDateSelection = false
 
-    private let dayWidth: CGFloat = 50
+    private let horizontalPadding: CGFloat = 16
+    private let daySpacing: CGFloat = 8
+    private let minimumDayItemWidth: CGFloat = 42
 
     var body: some View {
-        ZStack {
-            dateButtons
-                .offset(x: contentOffset)
+        GeometryReader { geometry in
+            let contentWidth = geometry.size.width - horizontalPadding * 2
+            let dayItemWidth = max(
+                minimumDayItemWidth,
+                (contentWidth - daySpacing * 6) / 7
+            )
+            let dayWidth = dayItemWidth + daySpacing
 
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.green03)
-                .frame(width: 42, height: 58)
-                .allowsHitTesting(false)
+            ZStack {
+                dateButtons(dayItemWidth: dayItemWidth, dayWidth: dayWidth)
+                    .offset(x: contentOffset)
 
-            dateTexts(weekdayColor: .white, dayColor: .white)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.green03)
+                    .frame(width: dayItemWidth, height: 58)
+                    .allowsHitTesting(false)
+
+                dateTexts(
+                    weekdayColor: .white,
+                    dayColor: .white,
+                    dayItemWidth: dayItemWidth
+                )
                 .offset(x: contentOffset)
                 .mask {
                     RoundedRectangle(cornerRadius: 16)
-                        .frame(width: 42, height: 58)
+                        .frame(width: dayItemWidth, height: 58)
                 }
                 .allowsHitTesting(false)
+            }
+            .frame(width: contentWidth, height: 58)
+            .clipped()
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .highPriorityGesture(dateDragGesture(dayWidth: dayWidth))
         }
-        .padding(.horizontal, 16)
-        .frame(maxWidth: .infinity)
         .frame(height: 58)
-        .clipped()
-        .contentShape(Rectangle())
-        .highPriorityGesture(dateDragGesture)
         .sensoryFeedback(.selection, trigger: viewModel.selectedDate)
     }
 
-    private var dateButtons: some View {
-        HStack(spacing: 8) {
+    private func dateButtons(dayItemWidth: CGFloat, dayWidth: CGFloat) -> some View {
+        HStack(spacing: daySpacing) {
             ForEach(Array(viewModel.visibleDates.enumerated()), id: \.offset) { index, date in
                 let offset = index - viewModel.visibleDates.count / 2
                 let isSelectable = viewModel.isSelectable(date)
 
                 Button {
                     guard offset != 0 else { return }
-                    moveSelectedDate(by: offset)
+                    moveSelectedDate(by: offset, dayWidth: dayWidth)
                 } label: {
                     dateText(
                         for: date,
                         weekdayColor: Color.gray03,
                         dayColor: isSelectable ? Color.black01 : Color.black01.opacity(0.6)
                     )
-                    .frame(width: 42, height: 58)
+                    .frame(width: dayItemWidth, height: 58)
                     .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
                 }
                 .buttonStyle(.plain)
@@ -346,11 +366,15 @@ private struct RecordDateSelector: View {
         }
     }
 
-    private func dateTexts(weekdayColor: Color, dayColor: Color) -> some View {
-        HStack(spacing: 8) {
+    private func dateTexts(
+        weekdayColor: Color,
+        dayColor: Color,
+        dayItemWidth: CGFloat
+    ) -> some View {
+        HStack(spacing: daySpacing) {
             ForEach(Array(viewModel.visibleDates.enumerated()), id: \.offset) { _, date in
                 dateText(for: date, weekdayColor: weekdayColor, dayColor: dayColor)
-                    .frame(width: 42, height: 58)
+                    .frame(width: dayItemWidth, height: 58)
             }
         }
     }
@@ -371,14 +395,14 @@ private struct RecordDateSelector: View {
         }
     }
 
-    private var dateDragGesture: some Gesture {
+    private func dateDragGesture(dayWidth: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 4)
             .onChanged { value in
                 guard !isAnimatingDateSelection else { return }
                 guard abs(value.translation.width) > abs(value.translation.height) else {
                     return
                 }
-                updateDrag(translation: value.translation.width)
+                updateDrag(translation: value.translation.width, dayWidth: dayWidth)
             }
             .onEnded { _ in
                 guard !isAnimatingDateSelection else { return }
@@ -386,7 +410,7 @@ private struct RecordDateSelector: View {
             }
     }
 
-    private func updateDrag(translation: CGFloat) {
+    private func updateDrag(translation: CGFloat, dayWidth: CGFloat) {
         let nextRequestedOffset = Int((-translation / dayWidth).rounded())
 
         if nextRequestedOffset != requestedDayOffset {
@@ -401,7 +425,7 @@ private struct RecordDateSelector: View {
             : proposedOffset
     }
 
-    private func moveSelectedDate(by value: Int) {
+    private func moveSelectedDate(by value: Int, dayWidth: CGFloat) {
         guard value != 0, !isAnimatingDateSelection else { return }
 
         isAnimatingDateSelection = true

@@ -4,7 +4,7 @@ import SwiftUI
 struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var isShowingNotificationNotice = false
-    @State private var isShowingAIReportNotice = false
+    @State private var isShowingWeeklyReport = false
     @State private var aiReportState: AIWeeklyReportState
     @State private var reportGenerationTask: Task<Void, Never>?
     @State private var reportGenerationID: UUID?
@@ -71,10 +71,19 @@ struct HomeView: View {
         } message: {
             Text("알림 기능은 준비 중이에요.")
         }
-        .alert("주간 리포트", isPresented: $isShowingAIReportNotice) {
-            Button("확인", role: .cancel) {}
-        } message: {
-            Text("상세 피드백 화면은 준비 중이에요.")
+        .fullScreenCover(isPresented: $isShowingWeeklyReport) {
+            WeeklyReportView(
+                viewModel: viewModel,
+                summary: weeklyReportSummary,
+                onBack: {
+                    withoutAnimation {
+                        isShowingWeeklyReport = false
+                    }
+                }
+            )
+            .transaction { transaction in
+                transaction.disablesAnimations = true
+            }
         }
     }
 
@@ -86,7 +95,9 @@ struct HomeView: View {
                 title: "AI 건강 피드백",
                 actionTitle: "주간 리포트",
                 action: {
-                    isShowingAIReportNotice = true
+                    withoutAnimation {
+                        isShowingWeeklyReport = true
+                    }
                 }
             ) {
                 AIWeeklyReportCard(message: message)
@@ -96,9 +107,8 @@ struct HomeView: View {
             HomeSection(
                 title: "AI 건강 피드백",
                 actionTitle: "주간 리포트",
-                action: {
-                    isShowingAIReportNotice = true
-                }
+                isActionDisabled: true,
+                action: {}
             ) {
                 AIWeeklyReportCard(
                     message: "이번 주 식단을 분석하고 있어요.",
@@ -180,6 +190,19 @@ struct HomeView: View {
         reportGenerationTask?.cancel()
         reportGenerationTask = nil
         reportGenerationID = nil
+    }
+
+    private var weeklyReportSummary: String {
+        guard case .available(let message) = aiReportState else {
+            return "식단 기록이 쌓이면 이번 주의 영양 흐름을 자세히 알려드릴게요."
+        }
+        return message
+    }
+
+    private func withoutAnimation(_ updates: () -> Void) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction, updates)
     }
 }
 

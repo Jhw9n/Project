@@ -2,7 +2,13 @@ import SwiftUI
 
 struct WeeklyReportView: View {
     private let report: WeeklyReportContent
+    private let reportInput: AIWeeklyReportInput?
+    private let detailReportService = AIWeeklyDetailReportService()
     let onBack: () -> Void
+
+    @State private var detailReport: AIWeeklyDetailReport?
+    @State private var isGeneratingDetailReport = false
+    @State private var detailGenerationID: UUID?
 
     init(
         viewModel: HomeViewModel,
@@ -10,11 +16,19 @@ struct WeeklyReportView: View {
         onBack: @escaping () -> Void
     ) {
         report = WeeklyReportContent(viewModel: viewModel, summary: summary)
+        reportInput = viewModel.weeklyReportInput
+        _detailReport = State(
+            initialValue: viewModel.weeklyReportInput.flatMap {
+                AIWeeklyDetailReportService().cachedReport(for: $0)
+            }
+        )
         self.onBack = onBack
     }
 
     init(preview: Bool, onBack: @escaping () -> Void) {
         report = .preview
+        reportInput = nil
+        _detailReport = State(initialValue: nil)
         self.onBack = onBack
     }
 
@@ -37,6 +51,9 @@ struct WeeklyReportView: View {
         }
         .background(Color.gray01)
         .preferredColorScheme(.light)
+        .task {
+            await loadDetailReportIfNeeded()
+        }
     }
 
     private var header: some View {
@@ -73,7 +90,7 @@ struct WeeklyReportView: View {
     private var overviewSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("이번 주 한눈에")
-                .font(.pretendardSemiBold(18))
+                .font(.pretendardSemiBold(16))
                 .foregroundStyle(Color.black01)
 
             VStack(alignment: .leading, spacing: 14) {
@@ -121,11 +138,19 @@ struct WeeklyReportView: View {
                             .foregroundStyle(Color.gray04)
                     }
 
-                    Text(report.summary)
-                        .font(.pretendardSemiBold(13))
-                        .foregroundStyle(Color.black01)
-                        .lineSpacing(4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(spacing: 9) {
+                        if isGeneratingDetailReport {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(Color.green03)
+                        }
+
+                        Text(summaryText)
+                            .font(.pretendardSemiBold(13))
+                            .foregroundStyle(Color.black01)
+                            .lineSpacing(4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 12)
@@ -139,7 +164,7 @@ struct WeeklyReportView: View {
     private var nutritionSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("영양 상태")
-                .font(.pretendardSemiBold(18))
+                .font(.pretendardSemiBold(16))
                 .foregroundStyle(Color.black01)
 
             LazyVGrid(
@@ -190,7 +215,7 @@ struct WeeklyReportView: View {
                 .lineSpacing(3)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 108, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 106, alignment: .topLeading)
         .background(
             nutrient.level.backgroundColor,
             in: RoundedRectangle(cornerRadius: 16)
@@ -201,7 +226,7 @@ struct WeeklyReportView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 7) {
                 Text("AI가 발견한 패턴")
-                    .font(.pretendardSemiBold(18))
+                    .font(.pretendardSemiBold(16))
                     .foregroundStyle(Color.black01)
 
                 Text("AI")
@@ -213,7 +238,7 @@ struct WeeklyReportView: View {
             }
 
             VStack(spacing: 10) {
-                ForEach(report.patterns) { pattern in
+                ForEach(patterns) { pattern in
                     HStack(spacing: 12) {
                         Image(systemName: pattern.symbolName)
                             .font(.system(size: 17, weight: .semibold))
@@ -244,9 +269,9 @@ struct WeeklyReportView: View {
     }
 
     private var nextGoalSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("다음 주 목표")
-                .font(.pretendardSemiBold(16))
+                .font(.pretendardSemiBold(15))
 
             HStack(spacing: 12) {
                 Image("reportGoalCheck")
@@ -258,10 +283,10 @@ struct WeeklyReportView: View {
                     .background(Color.white, in: Circle())
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(report.goalTitle)
-                        .font(.pretendardBold(18))
+                    Text(goalTitle)
+                        .font(.pretendardBold(16))
 
-                    Text(report.goalDescription)
+                    Text(goalDescription)
                         .font(.pretendardMedium(12))
                         .foregroundStyle(Color.white.opacity(0.82))
                         .lineSpacing(3)
@@ -272,7 +297,7 @@ struct WeeklyReportView: View {
         }
         .foregroundStyle(Color.white)
         .padding(.horizontal, 18)
-        .padding(.top, 18)
+        .padding(.top, 16)
         .padding(.bottom, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
@@ -290,6 +315,72 @@ struct WeeklyReportView: View {
             .font(.pretendardMedium(10))
             .foregroundStyle(Color.gray04)
             .frame(maxWidth: .infinity)
+    }
+
+    private var summaryText: String {
+        if isGeneratingDetailReport {
+            return "이번 주 식단의 흐름을 자세히 분석하고 있어요."
+        }
+        return detailReport?.summary ?? report.summary
+    }
+
+    private var patterns: [WeeklyReportPattern] {
+        guard let detailReport else { return report.patterns }
+        let symbols = ["chart.line.uptrend.xyaxis", "fork.knife"]
+        return detailReport.patterns.enumerated().map { index, pattern in
+            WeeklyReportPattern(
+                title: pattern.title,
+                description: pattern.description,
+                symbolName: symbols[min(index, symbols.count - 1)]
+            )
+        }
+    }
+
+    private var goalTitle: String {
+        detailReport?.goalTitle ?? report.goalTitle
+    }
+
+    private var goalDescription: String {
+        detailReport?.goalDescription ?? report.goalDescription
+    }
+
+    @MainActor
+    private func loadDetailReportIfNeeded() async {
+        guard detailReport == nil, let reportInput else { return }
+
+        let generationID = UUID()
+        detailGenerationID = generationID
+        isGeneratingDetailReport = true
+        Task {
+            try? await Task.sleep(for: .seconds(30))
+            guard detailGenerationID == generationID else { return }
+            detailGenerationID = nil
+            isGeneratingDetailReport = false
+        }
+
+        do {
+            let generatedReport = try await detailReportService.generateReport(
+                for: reportInput
+            )
+            guard
+                !Task.isCancelled,
+                detailGenerationID == generationID
+            else {
+                return
+            }
+            detailGenerationID = nil
+            isGeneratingDetailReport = false
+            withAnimation(.easeInOut(duration: 0.2)) {
+                detailReport = generatedReport
+            }
+        } catch {
+            guard detailGenerationID == generationID else { return }
+            detailGenerationID = nil
+            isGeneratingDetailReport = false
+            #if DEBUG
+            print("AI weekly detail report failed: \(error.localizedDescription)")
+            #endif
+        }
     }
 }
 

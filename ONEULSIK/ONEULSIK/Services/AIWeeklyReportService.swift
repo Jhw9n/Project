@@ -187,7 +187,17 @@ struct AIWeeklyReportService {
             .joined(separator: ":")
         }
 
-        return dayValues.joined(separator: "|")
+        let recommendation = input.recommendation
+        let recommendationValues = [
+            recommendation.calories,
+            recommendation.carbohydrateGrams,
+            recommendation.proteinGrams,
+            recommendation.fatGrams
+        ]
+        .map { String(Int($0.rounded())) }
+        .joined(separator: ":")
+
+        return dayValues.joined(separator: "|") + "#" + recommendationValues
     }
 
     private func firstSentences(_ value: String, limit: Int) -> String {

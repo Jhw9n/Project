@@ -5,6 +5,7 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var isShowingNotificationNotice = false
     @State private var isShowingWeeklyReport = false
+    @State private var reportDismissScrollToTopTrigger = 0
     @State private var aiReportState: AIWeeklyReportState
     @State private var reportGenerationTask: Task<Void, Never>?
     @State private var reportGenerationID: UUID?
@@ -36,7 +37,10 @@ struct HomeView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            NoBounceScrollView(scrollToTopTrigger: scrollToTopTrigger) {
+            NoBounceScrollView(
+                scrollToTopTrigger: scrollToTopTrigger,
+                immediateScrollToTopTrigger: reportDismissScrollToTopTrigger
+            ) {
                 LazyVStack(spacing: 0) {
                     HomeSummaryView(
                         viewModel: viewModel,
@@ -71,7 +75,12 @@ struct HomeView: View {
         } message: {
             Text("알림 기능은 준비 중이에요.")
         }
-        .fullScreenCover(isPresented: $isShowingWeeklyReport) {
+        .fullScreenCover(
+            isPresented: $isShowingWeeklyReport,
+            onDismiss: {
+                reportDismissScrollToTopTrigger += 1
+            }
+        ) {
             WeeklyReportView(
                 viewModel: viewModel,
                 summary: weeklyReportSummary,
@@ -245,15 +254,19 @@ private struct HomeSection<Content: View>: View {
                             if isActionLoading {
                                 ProgressView()
                                     .controlSize(.mini)
-                                    .tint(Color.white)
+                                    .tint(Color.black01)
+                            } else {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 11, weight: .semibold))
                             }
 
                             Text(actionTitle)
                                 .font(.pretendardBold(10))
                         }
-                        .foregroundStyle(Color.white)
-                        .frame(width: 62, height: 22)
-                        .background {
+                        .foregroundStyle(Color.black01)
+                        .frame(width: 82, height: 26)
+                        .background(Color.white, in: Capsule())
+                        .overlay {
                             MeshGradient(
                                 width: 3,
                                 height: 3,
@@ -274,7 +287,10 @@ private struct HomeSection<Content: View>: View {
                                     Color(red: 0.55, green: 0.31, blue: 0.92)
                                 ]
                             )
-                            .clipShape(Capsule())
+                            .mask {
+                                Capsule()
+                                    .strokeBorder(lineWidth: 3)
+                            }
                         }
                         .overlay {
                             if isActionLoading || isActionDisabled {

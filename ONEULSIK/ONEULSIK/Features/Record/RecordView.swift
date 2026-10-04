@@ -304,7 +304,7 @@ private struct RecordDateSelector: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let contentWidth = geometry.size.width - horizontalPadding * 2
+            let contentWidth = max(0, geometry.size.width - horizontalPadding * 2)
             let dayItemWidth = max(
                 minimumDayItemWidth,
                 (contentWidth - daySpacing * 6) / 7

@@ -22,7 +22,7 @@ struct MealDetailView: View {
                     .font(.pretendardMedium(18))
                     .foregroundStyle(Color.gray03)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 16)
 
@@ -32,7 +32,7 @@ struct MealDetailView: View {
                         mealRecordRow(record)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 20)
             }
         }
         .background(Color.gray01)
@@ -52,6 +52,7 @@ struct MealDetailView: View {
             Spacer()
         }
         .frame(height: 56)
+        .padding(.top, 8)
     }
 
     private func mealRecordRow(_ record: MealRecord) -> some View {

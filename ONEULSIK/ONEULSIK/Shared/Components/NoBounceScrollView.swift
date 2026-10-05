@@ -4,17 +4,24 @@ import UIKit
 struct NoBounceScrollView<Content: View>: UIViewControllerRepresentable {
     let content: Content
     let scrollToTopTrigger: Int
+    let immediateScrollToTopTrigger: Int
 
     init(
         scrollToTopTrigger: Int = 0,
+        immediateScrollToTopTrigger: Int = 0,
         @ViewBuilder content: () -> Content
     ) {
         self.scrollToTopTrigger = scrollToTopTrigger
+        self.immediateScrollToTopTrigger = immediateScrollToTopTrigger
         self.content = content()
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(content: content, scrollToTopTrigger: scrollToTopTrigger)
+        Coordinator(
+            content: content,
+            scrollToTopTrigger: scrollToTopTrigger,
+            immediateScrollToTopTrigger: immediateScrollToTopTrigger
+        )
     }
 
     func makeUIViewController(context: Context) -> UIViewController {
@@ -59,19 +66,31 @@ struct NoBounceScrollView<Content: View>: UIViewControllerRepresentable {
         context.coordinator.hostingController.rootView = content
         context.coordinator.scrollView?.bounces = false
 
-        guard context.coordinator.scrollToTopTrigger != scrollToTopTrigger else { return }
-        context.coordinator.scrollToTopTrigger = scrollToTopTrigger
-        context.coordinator.scrollView?.setContentOffset(.zero, animated: true)
+        if context.coordinator.immediateScrollToTopTrigger != immediateScrollToTopTrigger {
+            context.coordinator.immediateScrollToTopTrigger = immediateScrollToTopTrigger
+            context.coordinator.scrollView?.setContentOffset(.zero, animated: false)
+        }
+
+        if context.coordinator.scrollToTopTrigger != scrollToTopTrigger {
+            context.coordinator.scrollToTopTrigger = scrollToTopTrigger
+            context.coordinator.scrollView?.setContentOffset(.zero, animated: true)
+        }
     }
 
     final class Coordinator {
         let hostingController: UIHostingController<Content>
         weak var scrollView: UIScrollView?
         var scrollToTopTrigger: Int
+        var immediateScrollToTopTrigger: Int
 
-        init(content: Content, scrollToTopTrigger: Int = 0) {
+        init(
+            content: Content,
+            scrollToTopTrigger: Int = 0,
+            immediateScrollToTopTrigger: Int = 0
+        ) {
             hostingController = UIHostingController(rootView: content)
             self.scrollToTopTrigger = scrollToTopTrigger
+            self.immediateScrollToTopTrigger = immediateScrollToTopTrigger
         }
     }
 }

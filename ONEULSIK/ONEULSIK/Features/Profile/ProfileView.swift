@@ -29,21 +29,26 @@ struct ProfileView: View {
     }
 
     var body: some View {
-        NoBounceScrollView {
-            VStack(spacing: 0) {
-                header
-                greeting
-                    .padding(.top, -16)
+        GeometryReader { geometry in
+            let topSpacing = additionalTopSpacing(for: geometry)
+            let chartHeight = max(158, geometry.size.height - 527 - topSpacing)
 
-                profileInformationCard
-                    .padding(.top, 21)
+            NoBounceScrollView {
+                VStack(spacing: 0) {
+                    header
+                    greeting
+                        .padding(.top, -16 + topSpacing)
 
-                weightFeedbackCard
-                    .padding(.top, 16)
+                    profileInformationCard
+                        .padding(.top, 21)
 
-                weightChartSection
-                    .padding(.top, 24)
-                    .padding(.bottom, 20)
+                    weightFeedbackCard
+                        .padding(.top, 16)
+
+                    weightChartSection(chartHeight: chartHeight)
+                        .padding(.top, 24)
+                        .padding(.bottom, 24)
+                }
             }
         }
         .background(Color.gray01)
@@ -70,6 +75,10 @@ struct ProfileView: View {
                 transaction.disablesAnimations = true
             }
         }
+    }
+
+    private func additionalTopSpacing(for geometry: GeometryProxy) -> CGFloat {
+        min(max(geometry.safeAreaInsets.top - 44, 0), 12)
     }
 
     private var header: some View {
@@ -187,13 +196,16 @@ struct ProfileView: View {
         .padding(.horizontal, 16)
     }
 
-    private var weightChartSection: some View {
-        VStack(alignment: .leading, spacing: 11) {
+    private func weightChartSection(chartHeight: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
             Text("체중 변화")
                 .font(.pretendardSemiBold(16))
                 .foregroundStyle(Color.black01)
 
-            WeightChangeChart(points: viewModel.weeklyWeightPoints)
+            WeightChangeChart(
+                points: viewModel.weeklyWeightPoints,
+                height: chartHeight
+            )
         }
         .padding(.horizontal, 16)
     }

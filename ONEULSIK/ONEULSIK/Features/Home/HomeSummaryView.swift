@@ -72,7 +72,7 @@ struct HomeSummaryView: View {
             .padding(.horizontal, 16)
             .padding(.top, 16)
         }
-        .frame(height: 388, alignment: .top)
+        .frame(height: 344 + topInset, alignment: .top)
         .background {
             UnevenRoundedRectangle(
                 topLeadingRadius: 0,

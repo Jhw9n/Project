@@ -3,6 +3,7 @@ import SwiftUI
 
 struct WeightChangeChart: View {
     let points: [WeeklyWeightPoint]
+    let height: CGFloat
 
     @State private var selectedPointID: Date?
 
@@ -110,7 +111,7 @@ struct WeightChangeChart: View {
                     )
             }
         }
-        .frame(height: 158)
+        .frame(height: height)
         .padding(.horizontal, 14)
         .padding(.top, 10)
         .padding(.bottom, 10)
